@@ -38,29 +38,10 @@ namespace PlaystationDiscord
 			// Problem is, nearly all libraries that can send form encoded POST requests will also encode the redirect uri param
 			// Thus the redirect uri won't match and the API rejects the request
 
-			var request = (HttpWebRequest)WebRequest.Create("https://auth.api.sonyentertainmentnetwork.com/2.0/oauth/token");
+			var login = PSN.Login(@params["code"]);
 
-			var post = $"grant_type=authorization_code&code={@params["code"]}&redirect_uri=https://remoteplay.dl.playstation.net/remoteplay/redirect&";
-
-			var data = Encoding.ASCII.GetBytes(post);
-
-			request.Method = "POST";
-			request.ContentType = "application/x-www-form-urlencoded";
-			request.ContentLength = data.Length;
-			// base64 encoded client-id:client-secret for the remote play app
-			request.Headers["Authorization"] = "Basic YmE0OTVhMjQtODE4Yy00NzJiLWIxMmQtZmYyMzFjMWI1NzQ1Om12YWlaa1JzQXNJMUlCa1k=";
-
-			using (var stream = request.GetRequestStream())
-			{
-				stream.Write(data, 0, data.Length);
-			}
-
-			var response = (HttpWebResponse)request.GetResponse();
-
-			var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
-
-			((MainWindow)Application.Current.MainWindow).AccountTokens = JsonConvert.DeserializeObject<Tokens>(responseString);
-
+			(Application.Current.MainWindow as MainWindow).Playstation = login;
+			
 			this.Close();
 		}
 	}

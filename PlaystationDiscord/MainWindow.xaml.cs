@@ -16,6 +16,7 @@ using System.Windows.Shapes;
 using System.Security.Cryptography;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace PlaystationDiscord
 {
@@ -24,20 +25,21 @@ namespace PlaystationDiscord
 	/// </summary>
 	public partial class MainWindow : Window
 	{
-		private Tokens m_AccountTokens;
-		private PSN Playstation;
+		private PSN m_Playstation;
 		private DiscordController DiscordController { get; set; } = new DiscordController();
+		private CancellationTokenSource DiscordCts = new CancellationTokenSource();
 
-		public Tokens AccountTokens
+		private string CurrentGame { get; set; } = default(string);
+		private DateTime TimeStarted { get; set; } = default(DateTime);
+
+		public PSN Playstation
 		{
-			private get => m_AccountTokens;
+			private get => m_Playstation;
 			set
 			{
-				m_AccountTokens = value;
-				WriteTokens();
-				Playstation = new PSN(m_AccountTokens);
+				m_Playstation = value;
+				WriteTokens(value.Tokens);
 				Start();
-				UpdatePresence();
 			}
 		}
 
@@ -51,10 +53,10 @@ namespace PlaystationDiscord
 			get => ApplicationDataDirectory + "/tokens.dat";
 		}
 
-		private void WriteTokens()
+		private void WriteTokens(Tokens tokens)
 		{
 			// TODO - Maybe use a serializer here for the entire Tokens object
-			var savedTokens = $"{m_AccountTokens.access_token}:{m_AccountTokens.refresh_token}";
+			var savedTokens = $"{tokens.access_token}:{tokens.refresh_token}";
 			var stored = Convert.ToBase64String(ProtectedData.Protect(Encoding.UTF8.GetBytes(savedTokens), null, DataProtectionScope.LocalMachine));
 			if (!Directory.Exists(ApplicationDataDirectory)) Directory.CreateDirectory(ApplicationDataDirectory);
 			File.WriteAllText(TokensFile, stored);
@@ -78,6 +80,34 @@ namespace PlaystationDiscord
 			new DiscordController().Initialize();
 
 			DiscordRPC.UpdatePresence(ref DiscordController.presence);
+
+			DiscordCts = new CancellationTokenSource();
+
+			Task.Run(() => Update(DiscordCts.Token));
+		}
+
+		private void Stop()
+		{
+			DiscordCts.Cancel();
+
+			DiscordRPC.Shutdown();
+		}
+
+		public async Task Update(CancellationToken token)
+		{
+			while (!token.IsCancellationRequested)
+			{
+				UpdatePresence();
+
+				try
+				{
+					await Task.Delay(TimeSpan.FromSeconds(30), token);
+				}
+				catch (TaskCanceledException)
+				{
+					break;
+				}
+			}
 		}
 
 		private void UpdatePresence()
@@ -91,7 +121,9 @@ namespace PlaystationDiscord
 			// Dirty, but fixes the Unicode characters.
 			// https://github.com/discordapp/discord-rpc/issues/119#issuecomment-363916563
 
-			var encoded = Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(game.titleName));
+
+			var currentStatus = game.titleName ?? game.onlineStatus;
+			var encoded = Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(currentStatus));
 			encoded += "\0\0"; // Null terminate for the pointer
 
 			var pointer = Marshal.AllocCoTaskMem(Encoding.UTF8.GetByteCount(encoded));
@@ -107,15 +139,35 @@ namespace PlaystationDiscord
 
 			if (game.gameStatus != null) DiscordController.presence.state = @game.gameStatus;
 
+			if (game.npTitleId != null)
+			{
+				if (!game.npTitleId.Equals(CurrentGame))
+				{
+					DiscordController.presence.startTimestamp = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+					CurrentGame = game.npTitleId;
+					TimeStarted = DateTime.UtcNow;
+				}
+				else
+				{
+					DiscordController.presence.startTimestamp = (long)(TimeStarted - new DateTime(1970, 1, 1)).TotalSeconds;
+				}
+
+			}
+
 			DiscordRPC.UpdatePresence(ref DiscordController.presence);
 
 			// Leak? - Not sure if this is the right method to free the marshal'd mem
 			Marshal.FreeCoTaskMem(pointer);
 		}
 
+		private ProfileRoot GetProfile()
+		{
+			return Task.Run(async () => await Playstation.Info()).Result; // Deadlock
+		}
+
 		private Presence FetchGame()
 		{
-			var data = Task.Run(async () => await Playstation.Info()).Result; // Deadlock
+			var data = GetProfile();
 			return data.profile.presences[0];
 		}
 
@@ -127,13 +179,28 @@ namespace PlaystationDiscord
 			{
 				var tokens = CheckForTokens();
 
-				AccountTokens = new PSN(tokens).Refresh();
+				Playstation = new PSN(tokens).Refresh();
+
+				var info = GetProfile();
+
+				lblWelcome.Content = $"Welcome, {info.profile.onlineId}!";
+
+				var bitmap = new BitmapImage();
+				bitmap.BeginInit();
+				bitmap.UriSource = new Uri(info.profile.avatarUrls[1].avatarUrl, UriKind.Absolute);
+				bitmap.EndInit();
+
+				imgAvatar.Source = bitmap;
 
 				btnSignIn.Visibility = Visibility.Hidden;
+				lblWelcome.Visibility = Visibility.Visible;
+				imgAvatar.Visibility = Visibility.Visible;
 			}
 			catch (FileNotFoundException)
 			{
 				btnSignIn.Visibility = Visibility.Visible;
+				lblWelcome.Visibility = Visibility.Hidden;
+				imgAvatar.Visibility = Visibility.Hidden;
 			}
 		}
 
@@ -145,6 +212,12 @@ namespace PlaystationDiscord
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
 		{
 			DiscordRPC.Shutdown();
+		}
+
+		private void togEnableRP_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+		{
+			if (togEnableRP.IsOn) Stop();
+			else Start();
 		}
 	}
 }
