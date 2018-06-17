@@ -50,7 +50,7 @@ namespace PlaystationDiscord
 			public long startTimestamp;
 			public long endTimestamp;
 			public string largeImageKey; /* max 32 bytes */
-			public string largeImageText; /* max 128 bytes */
+			public IntPtr largeImageText; /* max 128 bytes */
 			public string smallImageKey; /* max 32 bytes */
 			public string smallImageText; /* max 128 bytes */
 			public string partyId; /* max 128 bytes */

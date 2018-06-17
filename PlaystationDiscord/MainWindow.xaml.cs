@@ -84,11 +84,6 @@ namespace PlaystationDiscord
 		{
 			var game = FetchGame();
 
-			DiscordController.presence = new DiscordRPC.RichPresence()
-			{
-				largeImageKey = "ps4_main",
-				largeImageText = game.titleName,
-			};
 
 			// Hack - This is a mess
 			// So apparently, either something with `ref` in C# OR something with Discord messes up Unicode literals
@@ -101,6 +96,13 @@ namespace PlaystationDiscord
 
 			var pointer = Marshal.AllocCoTaskMem(Encoding.UTF8.GetByteCount(encoded));
 			Marshal.Copy(Encoding.UTF8.GetBytes(encoded), 0, pointer, Encoding.UTF8.GetByteCount(encoded));
+
+			DiscordController.presence = new DiscordRPC.RichPresence()
+			{
+				largeImageKey = "ps4_main",
+				largeImageText = pointer,
+			};
+
 			DiscordController.presence.details = pointer;
 
 			if (game.gameStatus != null) DiscordController.presence.state = @game.gameStatus;
