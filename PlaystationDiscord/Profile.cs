@@ -40,6 +40,7 @@ namespace PlaystationDiscord
 		public string npTitleId { get; set; }
 		public string titleName { get; set; }
 		public string npTitleIconUrl { get; set; }
+		public string gameStatus { get; set; }
 		public bool hasBroadcastData { get; set; }
 	}
 

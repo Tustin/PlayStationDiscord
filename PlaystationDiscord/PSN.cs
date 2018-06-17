@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Flurl;
 using Flurl.Http;
+using Newtonsoft.Json;
 
 namespace PlaystationDiscord
 {
@@ -25,7 +28,32 @@ namespace PlaystationDiscord
 				.GetJsonAsync<ProfileRoot>();
 		}
 
+		public Tokens Refresh()
+		{
+			// Hack - Have to do this again, thanks to encoding issues
+			var request = (HttpWebRequest)WebRequest.Create("https://auth.api.sonyentertainmentnetwork.com/2.0/oauth/token");
 
+			var post = $"grant_type=refresh_token&refresh_token={this.tokens.refresh_token}&scope=psn:clientapp&";
+
+			var data = Encoding.ASCII.GetBytes(post);
+
+			request.Method = "POST";
+			request.ContentType = "application/x-www-form-urlencoded";
+			request.ContentLength = data.Length;
+			// base64 encoded client-id:client-secret for the remote play app
+			request.Headers["Authorization"] = "Basic YmE0OTVhMjQtODE4Yy00NzJiLWIxMmQtZmYyMzFjMWI1NzQ1Om12YWlaa1JzQXNJMUlCa1k=";
+
+			using (var stream = request.GetRequestStream())
+			{
+				stream.Write(data, 0, data.Length);
+			}
+
+			var response = (HttpWebResponse)request.GetResponse();
+
+			var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
+
+			return JsonConvert.DeserializeObject<Tokens>(responseString);
+		}
 
 	}
 }

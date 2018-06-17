@@ -42,10 +42,11 @@ namespace PlaystationDiscord
 		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 		public delegate void RequestCallback(JoinRequest request);
 
+		[System.Serializable, StructLayout(LayoutKind.Sequential)]
 		public struct RichPresence
 		{
 			public string state; /* max 128 bytes */
-			public string details; /* max 128 bytes */
+			public IntPtr details; /* max 128 bytes */
 			public long startTimestamp;
 			public long endTimestamp;
 			public string largeImageKey; /* max 32 bytes */
