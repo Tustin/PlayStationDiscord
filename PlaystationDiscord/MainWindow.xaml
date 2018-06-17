@@ -17,7 +17,7 @@
         <Image HorizontalAlignment="Left" x:Name="imgAvatar" Height="160" VerticalAlignment="Top" Width="160" Margin="25,41,0,0"/>
 
         <ToggleSwitch:ToggleSwitch Name="togEnableRP" IsOn="True"  HorizontalAlignment="Left" Height="34" VerticalAlignment="Top" Width="56" Margin="212,41,0,0" PreviewMouseUp="togEnableRP_PreviewMouseUp"/>
-        <Label Content="Enable Rich Presence" HorizontalAlignment="Left" Margin="273,45,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.553,0.115" Grid.ColumnSpan="2"/>
+        <Label Name="lblEnableRP" Content="Enable Rich Presence" HorizontalAlignment="Left" Margin="273,45,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.553,0.115" Grid.ColumnSpan="2"/>
 
     </Grid>
 </Window>

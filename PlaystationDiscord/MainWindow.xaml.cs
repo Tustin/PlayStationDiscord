@@ -171,10 +171,8 @@ namespace PlaystationDiscord
 			return data.profile.presences[0];
 		}
 
-		public MainWindow()
+		private void LoadComponents()
 		{
-			InitializeComponent();
-
 			try
 			{
 				var tokens = CheckForTokens();
@@ -195,18 +193,38 @@ namespace PlaystationDiscord
 				btnSignIn.Visibility = Visibility.Hidden;
 				lblWelcome.Visibility = Visibility.Visible;
 				imgAvatar.Visibility = Visibility.Visible;
+				lblEnableRP.Visibility = Visibility.Visible;
+				togEnableRP.Visibility = Visibility.Visible;
 			}
 			catch (FileNotFoundException)
 			{
 				btnSignIn.Visibility = Visibility.Visible;
 				lblWelcome.Visibility = Visibility.Hidden;
 				imgAvatar.Visibility = Visibility.Hidden;
+				lblEnableRP.Visibility = Visibility.Hidden;
+				togEnableRP.Visibility = Visibility.Hidden;
 			}
+		}
+
+		public MainWindow()
+		{
+			InitializeComponent();
+
+			LoadComponents();
 		}
 
 		private void Button_Click(object sender, RoutedEventArgs e)
 		{
-			new SignIn().Show();
+			var signIn = new SignIn();
+			signIn.Closed += SignIn_Closed;
+			signIn.Show();
+		}
+
+		private void SignIn_Closed(object sender, EventArgs e)
+		{
+			if (Playstation == null) return;
+
+			LoadComponents();
 		}
 
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
