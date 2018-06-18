@@ -34,6 +34,8 @@ namespace PlaystationDiscord
 		private string CurrentGame { get; set; } = default(string);
 		private DateTime TimeStarted { get; set; } = default(DateTime);
 
+		public delegate void UpdateStatusControlsCallback(string currentGame);
+
 		public PSN Playstation
 		{
 			private get => m_Playstation;
@@ -158,9 +160,17 @@ namespace PlaystationDiscord
 			}
 
 			DiscordRPC.UpdatePresence(ref DiscordController.presence);
+			lblCurrentlyPlaying.Dispatcher.Invoke(new UpdateStatusControlsCallback(UpdateStatusControls),
+				new object[] { currentStatus });
 
 			// Leak? - Not sure if this is the right method to free the marshal'd mem
 			Marshal.FreeCoTaskMem(pointer);
+		}
+
+		private void UpdateStatusControls(string currentGame)
+		{
+			lblCurrentlyPlaying.Content = $"Status: {currentGame}";
+			lblLastUpdated.Content = $"Last Updated: {DateTime.Now.ToShortTimeString()}";
 		}
 
 		private ProfileRoot GetProfile(int tries = 0)
@@ -197,6 +207,8 @@ namespace PlaystationDiscord
 				imgAvatar.Visibility = Visibility.Visible;
 				lblEnableRP.Visibility = Visibility.Visible;
 				togEnableRP.Visibility = Visibility.Visible;
+				lblCurrentlyPlaying.Visibility = Visibility.Visible;
+				lblLastUpdated.Visibility = Visibility.Visible;
 			}
 			else
 			{
@@ -205,6 +217,8 @@ namespace PlaystationDiscord
 				imgAvatar.Visibility = Visibility.Hidden;
 				lblEnableRP.Visibility = Visibility.Hidden;
 				togEnableRP.Visibility = Visibility.Hidden;
+				lblCurrentlyPlaying.Visibility = Visibility.Hidden;
+				lblLastUpdated.Visibility = Visibility.Hidden;
 			}
 
 		}

@@ -14,5 +14,7 @@
 
         <ToggleSwitch:ToggleSwitch Name="togEnableRP" IsOn="True"  HorizontalAlignment="Left" Height="34" VerticalAlignment="Top" Width="56" Margin="200,61,0,0" PreviewMouseUp="togEnableRP_PreviewMouseUp"/>
         <Label Name="lblEnableRP" Content="Enable Rich Presence" Margin="256,65,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.553,0.115" Height="26" HorizontalAlignment="Left" Width="122"/>
+        <Label Content="Label" Name="lblCurrentlyPlaying" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="200,133,0,0"/>
+        <Label Content="Label" Name="lblLastUpdated" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="200,159,0,0"/>
     </Grid>
 </Window>
