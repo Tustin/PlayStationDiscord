@@ -5,12 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PlaystationDiscord"
         mc:Ignorable="d"
-        Title="Login to PSN" Height="511.111" Width="519.444">
+        Title="Login to PSN" Height="785" Width="563" ResizeMode="NoResize" WindowStartupLocation="CenterScreen">
     <Grid Margin="0,0,292,-3">
         <Grid.ColumnDefinitions>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-        <WebBrowser LoadCompleted="browser_LoadCompleted" Name="browser" HorizontalAlignment="Left" Height="473" VerticalAlignment="Top" Width="490" Margin="10,0,-281,0"/>
+        <WebBrowser LoadCompleted="browser_LoadCompleted" Name="browser" HorizontalAlignment="Left" Height="785" VerticalAlignment="Top" Width="563" Margin="0,0,-298,-26"/>
 
     </Grid>
 </Window>

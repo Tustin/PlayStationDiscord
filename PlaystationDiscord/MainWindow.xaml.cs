@@ -17,6 +17,7 @@ using System.Security.Cryptography;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Windows.Forms;
 
 namespace PlaystationDiscord
 {
@@ -196,7 +197,7 @@ namespace PlaystationDiscord
 				lblEnableRP.Visibility = Visibility.Visible;
 				togEnableRP.Visibility = Visibility.Visible;
 			}
-			catch (FileNotFoundException)
+			catch (Exception)
 			{
 				btnSignIn.Visibility = Visibility.Visible;
 				lblWelcome.Visibility = Visibility.Hidden;
@@ -209,8 +210,21 @@ namespace PlaystationDiscord
 		public MainWindow()
 		{
 			InitializeComponent();
+			NotifyIcon icon = new NotifyIcon()
+			{
+				Icon = Properties.Resources.icon,
+				Visible = true,
+				Text = "Discord Rich Presence for PlayStation"
+			};
+			icon.DoubleClick += Icon_DoubleClick;
 
 			LoadComponents();
+		}
+
+		private void Icon_DoubleClick(object sender, EventArgs e)
+		{
+			this.Show();
+			this.WindowState = WindowState.Normal;
 		}
 
 		private void Button_Click(object sender, RoutedEventArgs e)
@@ -236,6 +250,11 @@ namespace PlaystationDiscord
 		{
 			if (togEnableRP.IsOn) Stop();
 			else Start();
+		}
+
+		private void Window_StateChanged(object sender, EventArgs e)
+		{
+			if (WindowState == WindowState.Minimized) this.Hide();
 		}
 	}
 }

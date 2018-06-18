@@ -13,33 +13,27 @@ namespace PlaystationDiscord
 {
 	public class PSN
 	{
-		Tokens m_Tokens;
-
-		public Tokens Tokens
-		{
-			get => m_Tokens;
-		}
+		public Tokens Tokens { get; private set; }
 
 		public PSN(Tokens tokens)
 		{
-			this.m_Tokens = tokens;
+			this.Tokens = tokens;
 		}
 
 		public async Task<ProfileRoot> Info()
 		{
 			// TODO - simplify the query string
 			return await "https://us-prof.np.community.playstation.net/userProfile/v1/users/me/profile2?fields=npId,onlineId,avatarUrls,plus,aboutMe,languagesUsed,trophySummary(@default,progress,earnedTrophies),isOfficiallyVerified,personalDetail(@default,profilePictureUrls),personalDetailSharing,personalDetailSharingRequestMessageFlag,primaryOnlineStatus,presences(@titleInfo,hasBroadcastData),friendRelation,requestMessageFlag,blocking,mutualFriendsCount,following,followerCount,friendsCount,followingUsersCount&avatarSizes=m,xl&profilePictureSizes=m,xl&languagesUsedLanguageSet=set3&psVitaTitleIcon=circled&titleIconSize=s"
-				.WithOAuthBearerToken(m_Tokens.access_token)
+				.WithOAuthBearerToken(Tokens.access_token)
 				.GetJsonAsync<ProfileRoot>();
 		}
 
-		// TODO - Throw exception on an expired refresh token
 		public PSN Refresh()
 		{
 			// Hack - Have to do this again, thanks to encoding issues
 			var request = (HttpWebRequest)WebRequest.Create("https://auth.api.sonyentertainmentnetwork.com/2.0/oauth/token");
 
-			var post = $"grant_type=refresh_token&refresh_token={this.m_Tokens.refresh_token}&scope=psn:clientapp&";
+			var post = $"grant_type=refresh_token&refresh_token={this.Tokens.refresh_token}&scope=psn:clientapp&";
 
 			var data = Encoding.ASCII.GetBytes(post);
 
@@ -54,13 +48,25 @@ namespace PlaystationDiscord
 				stream.Write(data, 0, data.Length);
 			}
 
-			var response = (HttpWebResponse)request.GetResponse();
+			try
+			{
+				var response = (HttpWebResponse)request.GetResponse();
+				var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
 
-			var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
+				this.Tokens = JsonConvert.DeserializeObject<Tokens>(responseString);
 
-			this.m_Tokens = JsonConvert.DeserializeObject<Tokens>(responseString);
+				return this;
+			}
+			catch (WebException ex)
+			{
+				if (ex.Status == WebExceptionStatus.ProtocolError)
+				{
+					var response = ex.Response as HttpWebResponse;
+					if (response.StatusCode == HttpStatusCode.BadRequest) throw new Exceptions.ExpiredRefreshTokenException();
+				}
 
-			return this;
+				throw ex;
+			}
 		}
 
 		public static PSN Login(string code)
@@ -85,10 +91,10 @@ namespace PlaystationDiscord
 			var response = (HttpWebResponse)request.GetResponse();
 
 			var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
-			
-			var token = JsonConvert.DeserializeObject<Tokens>(responseString);
 
-			return new PSN(token);
+			var tokens = JsonConvert.DeserializeObject<Tokens>(responseString);
+
+			return new PSN(tokens);
 		}
 
 	}
