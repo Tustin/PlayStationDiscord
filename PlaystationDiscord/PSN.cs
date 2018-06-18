@@ -9,6 +9,7 @@ using Flurl;
 using Flurl.Http;
 using Newtonsoft.Json;
 using PlaystationDiscord.Exceptions;
+using PlaystationDiscord.Models;
 
 namespace PlaystationDiscord
 {
@@ -62,6 +63,7 @@ namespace PlaystationDiscord
 				var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
 
 				this.Tokens = JsonConvert.DeserializeObject<Tokens>(responseString);
+				this.Tokens.Write();
 
 				return this;
 			}

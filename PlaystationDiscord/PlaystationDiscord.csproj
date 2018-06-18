@@ -76,12 +76,12 @@
     <Compile Include="DiscordRPC.cs" />
     <Compile Include="ExpiredAccessTokenException.cs" />
     <Compile Include="ExpiredRefreshTokenException.cs" />
-    <Compile Include="Profile.cs" />
+    <Compile Include="Models\Profile.cs" />
     <Compile Include="PSN.cs" />
     <Compile Include="SignIn.xaml.cs">
       <DependentUpon>SignIn.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Tokens.cs" />
+    <Compile Include="Models\Tokens.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

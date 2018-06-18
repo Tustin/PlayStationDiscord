@@ -1,35 +1,25 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Security.Cryptography;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
 using PlaystationDiscord.Exceptions;
+using PlaystationDiscord.Models;
+using System.Windows.Media.Imaging;
 
 namespace PlaystationDiscord
 {
-	/// <summary>
-	/// Interaction logic for MainWindow.xaml
-	/// </summary>
 	public partial class MainWindow : Window
 	{
 		private PSN m_Playstation;
 		private DiscordController DiscordController { get; set; } = new DiscordController();
 		private CancellationTokenSource DiscordCts = new CancellationTokenSource();
+		private CancellationTokenSource TokenRefreshCts = new CancellationTokenSource();
 
 		private string CurrentGame { get; set; } = default(string);
 		private DateTime TimeStarted { get; set; } = default(DateTime);
@@ -42,41 +32,9 @@ namespace PlaystationDiscord
 			set
 			{
 				m_Playstation = value;
-				WriteTokens(value.Tokens);
+				value.Tokens.Write();
 				Start();
 			}
-		}
-
-		private string ApplicationDataDirectory
-		{
-			get => Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/PS4Discord";
-		}
-
-		private string TokensFile
-		{
-			get => ApplicationDataDirectory + "/tokens.dat";
-		}
-
-		private void WriteTokens(Tokens tokens)
-		{
-			// TODO - Maybe use a serializer here for the entire Tokens object
-			var savedTokens = $"{tokens.access_token}:{tokens.refresh_token}";
-			var stored = Convert.ToBase64String(ProtectedData.Protect(Encoding.UTF8.GetBytes(savedTokens), null, DataProtectionScope.LocalMachine));
-			if (!Directory.Exists(ApplicationDataDirectory)) Directory.CreateDirectory(ApplicationDataDirectory);
-			File.WriteAllText(TokensFile, stored);
-		}
-
-		private Tokens CheckForTokens()
-		{
-			if (!File.Exists(TokensFile)) throw new FileNotFoundException();
-			var storedTokens = File.ReadAllText(TokensFile);
-			var tokens = Encoding.UTF8.GetString(ProtectedData.Unprotect(Convert.FromBase64String(storedTokens), null, DataProtectionScope.LocalMachine));
-			var pieces = tokens.Split(':');
-			return new Tokens()
-			{
-				access_token = pieces[0],
-				refresh_token = pieces[1]
-			};
 		}
 
 		private void Start()
@@ -86,26 +44,55 @@ namespace PlaystationDiscord
 			DiscordRPC.UpdatePresence(ref DiscordController.presence);
 
 			DiscordCts = new CancellationTokenSource();
+			TokenRefreshCts = new CancellationTokenSource();
 
 			Task.Run(() => Update(DiscordCts.Token));
+			Task.Run(() => TokenRefresh(TokenRefreshCts.Token));
+		}
+
+		private async Task TokenRefresh(CancellationToken cts)
+		{
+			while (!cts.IsCancellationRequested)
+			{
+				try
+				{
+					await Task.Delay(TimeSpan.FromSeconds(Playstation.Tokens.expires_in - 60), cts);
+
+					try
+					{
+						Playstation.Refresh();
+					}
+					catch (ExpiredRefreshTokenException)
+					{
+						// If we get here, it means both the access token and refresh tokens have expired
+						// Might not be necessary but better to have it than not
+						Stop();
+						break; // Pointless? Stop() will cancel this thread anyways
+					}
+				}
+				catch (TaskCanceledException)
+				{
+					break;
+				}
+			}
 		}
 
 		private void Stop()
 		{
 			DiscordCts.Cancel();
-
+			TokenRefreshCts.Cancel();
 			DiscordRPC.Shutdown();
 		}
 
-		public async Task Update(CancellationToken token)
+		public async Task Update(CancellationToken cts)
 		{
-			while (!token.IsCancellationRequested)
+			while (!cts.IsCancellationRequested)
 			{
 				UpdatePresence();
 
 				try
 				{
-					await Task.Delay(TimeSpan.FromSeconds(30), token);
+					await Task.Delay(TimeSpan.FromSeconds(30), cts);
 				}
 				catch (TaskCanceledException)
 				{
@@ -118,15 +105,13 @@ namespace PlaystationDiscord
 		{
 			var game = FetchGame();
 
-			if (game == null) return;
-
-
 			// Hack - This is a mess
 			// So apparently, either something with `ref` in C# OR something with Discord messes up Unicode literals
 			// To fix this, instead of passing a string to the struct and sending that over to RPC, we need to make a pointer to it
 			// Dirty, but fixes the Unicode characters.
 			// https://github.com/discordapp/discord-rpc/issues/119#issuecomment-363916563
 
+			// TODO - Figure out why the pointer will point to junk memory after toggling the enable switch after some time (1 hour+)
 
 			var currentStatus = game.titleName ?? game.onlineStatus;
 			var encoded = Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(currentStatus));
@@ -175,27 +160,8 @@ namespace PlaystationDiscord
 
 		private ProfileRoot GetProfile(int tries = 0)
 		{
-			try
-			{
-				return Task.Run(async () => await Playstation.Info()).Result; // Deadlock
-			}
-			catch (ExpiredAccessTokenException)
-			{
-				try
-				{
-					if (tries == 5) throw new Exception(); // Hack to get this to jump to the next catch block
-					Playstation.Refresh();
-					return GetProfile(++tries); 
-				}
-				catch (Exception)
-				{
-					// If we get here, it means both the access token and refresh tokens have expired, or we got stuck in a loop from above
-					// Might not be necessary but better to have it than not
-					Stop();
-					SetControlState(false);
-					return null;
-				}
-			}
+			return Task.Run(async () => await Playstation.Info()).Result; // Deadlock
+
 		}
 
 		private void SetControlState(bool loggedIn)
@@ -226,14 +192,14 @@ namespace PlaystationDiscord
 		private Presence FetchGame()
 		{
 			var data = GetProfile();
-			return data.profile.presences[0] ?? null;
+			return data.profile.presences[0];
 		}
 
 		private void LoadComponents()
 		{
 			try
 			{
-				var tokens = CheckForTokens();
+				var tokens = Tokens.Check();
 
 				Playstation = new PSN(tokens).Refresh();
 
@@ -292,7 +258,7 @@ namespace PlaystationDiscord
 
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
 		{
-			DiscordRPC.Shutdown();
+			Stop();
 		}
 
 		private void togEnableRP_PreviewMouseUp(object sender, MouseButtonEventArgs e)
