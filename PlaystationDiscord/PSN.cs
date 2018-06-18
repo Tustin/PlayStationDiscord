@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Flurl;
 using Flurl.Http;
 using Newtonsoft.Json;
+using PlaystationDiscord.Exceptions;
 
 namespace PlaystationDiscord
 {
@@ -22,10 +23,17 @@ namespace PlaystationDiscord
 
 		public async Task<ProfileRoot> Info()
 		{
-			// TODO - simplify the query string
-			return await "https://us-prof.np.community.playstation.net/userProfile/v1/users/me/profile2?fields=npId,onlineId,avatarUrls,plus,aboutMe,languagesUsed,trophySummary(@default,progress,earnedTrophies),isOfficiallyVerified,personalDetail(@default,profilePictureUrls),personalDetailSharing,personalDetailSharingRequestMessageFlag,primaryOnlineStatus,presences(@titleInfo,hasBroadcastData),friendRelation,requestMessageFlag,blocking,mutualFriendsCount,following,followerCount,friendsCount,followingUsersCount&avatarSizes=m,xl&profilePictureSizes=m,xl&languagesUsedLanguageSet=set3&psVitaTitleIcon=circled&titleIconSize=s"
-				.WithOAuthBearerToken(Tokens.access_token)
-				.GetJsonAsync<ProfileRoot>();
+			try
+			{
+				return await "https://us-prof.np.community.playstation.net/userProfile/v1/users/me/profile2?fields=npId,onlineId,avatarUrls,plus,aboutMe,languagesUsed,trophySummary(@default,progress,earnedTrophies),isOfficiallyVerified,personalDetail(@default,profilePictureUrls),personalDetailSharing,personalDetailSharingRequestMessageFlag,primaryOnlineStatus,presences(@titleInfo,hasBroadcastData),friendRelation,requestMessageFlag,blocking,mutualFriendsCount,following,followerCount,friendsCount,followingUsersCount&avatarSizes=m,xl&profilePictureSizes=m,xl&languagesUsedLanguageSet=set3&psVitaTitleIcon=circled&titleIconSize=s"
+					.WithOAuthBearerToken(Tokens.access_token)
+					.GetJsonAsync<ProfileRoot>();
+			}
+			catch (FlurlHttpException ex)
+			{
+				if (ex.Call.Response.StatusCode == HttpStatusCode.Unauthorized) throw new ExpiredAccessTokenException();
+				throw ex;
+			}
 		}
 
 		public PSN Refresh()
@@ -62,7 +70,7 @@ namespace PlaystationDiscord
 				if (ex.Status == WebExceptionStatus.ProtocolError)
 				{
 					var response = ex.Response as HttpWebResponse;
-					if (response.StatusCode == HttpStatusCode.BadRequest) throw new Exceptions.ExpiredRefreshTokenException();
+					if (response.StatusCode == HttpStatusCode.BadRequest) throw new ExpiredRefreshTokenException();
 				}
 
 				throw ex;

@@ -74,6 +74,7 @@
     </ApplicationDefinition>
     <Compile Include="DiscordController.cs" />
     <Compile Include="DiscordRPC.cs" />
+    <Compile Include="ExpiredAccessTokenException.cs" />
     <Compile Include="ExpiredRefreshTokenException.cs" />
     <Compile Include="Profile.cs" />
     <Compile Include="PSN.cs" />

@@ -18,6 +18,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
+using PlaystationDiscord.Exceptions;
 
 namespace PlaystationDiscord
 {
@@ -115,6 +116,8 @@ namespace PlaystationDiscord
 		{
 			var game = FetchGame();
 
+			if (game == null) return;
+
 
 			// Hack - This is a mess
 			// So apparently, either something with `ref` in C# OR something with Discord messes up Unicode literals
@@ -152,7 +155,6 @@ namespace PlaystationDiscord
 				{
 					DiscordController.presence.startTimestamp = (long)(TimeStarted - new DateTime(1970, 1, 1)).TotalSeconds;
 				}
-
 			}
 
 			DiscordRPC.UpdatePresence(ref DiscordController.presence);
@@ -161,15 +163,56 @@ namespace PlaystationDiscord
 			Marshal.FreeCoTaskMem(pointer);
 		}
 
-		private ProfileRoot GetProfile()
+		private ProfileRoot GetProfile(int tries = 0)
 		{
-			return Task.Run(async () => await Playstation.Info()).Result; // Deadlock
+			try
+			{
+				return Task.Run(async () => await Playstation.Info()).Result; // Deadlock
+			}
+			catch (ExpiredAccessTokenException)
+			{
+				try
+				{
+					if (tries == 5) throw new Exception(); // Hack to get this to jump to the next catch block
+					Playstation.Refresh();
+					return GetProfile(++tries); 
+				}
+				catch (Exception)
+				{
+					// If we get here, it means both the access token and refresh tokens have expired, or we got stuck in a loop from above
+					// Might not be necessary but better to have it than not
+					Stop();
+					SetControlState(false);
+					return null;
+				}
+			}
+		}
+
+		private void SetControlState(bool loggedIn)
+		{
+			if (loggedIn)
+			{
+				btnSignIn.Visibility = Visibility.Hidden;
+				lblWelcome.Visibility = Visibility.Visible;
+				imgAvatar.Visibility = Visibility.Visible;
+				lblEnableRP.Visibility = Visibility.Visible;
+				togEnableRP.Visibility = Visibility.Visible;
+			}
+			else
+			{
+				btnSignIn.Visibility = Visibility.Visible;
+				lblWelcome.Visibility = Visibility.Hidden;
+				imgAvatar.Visibility = Visibility.Hidden;
+				lblEnableRP.Visibility = Visibility.Hidden;
+				togEnableRP.Visibility = Visibility.Hidden;
+			}
+
 		}
 
 		private Presence FetchGame()
 		{
 			var data = GetProfile();
-			return data.profile.presences[0];
+			return data.profile.presences[0] ?? null;
 		}
 
 		private void LoadComponents()
@@ -191,19 +234,11 @@ namespace PlaystationDiscord
 
 				imgAvatar.Source = bitmap;
 
-				btnSignIn.Visibility = Visibility.Hidden;
-				lblWelcome.Visibility = Visibility.Visible;
-				imgAvatar.Visibility = Visibility.Visible;
-				lblEnableRP.Visibility = Visibility.Visible;
-				togEnableRP.Visibility = Visibility.Visible;
+				SetControlState(true);
 			}
 			catch (Exception)
 			{
-				btnSignIn.Visibility = Visibility.Visible;
-				lblWelcome.Visibility = Visibility.Hidden;
-				imgAvatar.Visibility = Visibility.Hidden;
-				lblEnableRP.Visibility = Visibility.Hidden;
-				togEnableRP.Visibility = Visibility.Hidden;
+				SetControlState(false);
 			}
 		}
 
