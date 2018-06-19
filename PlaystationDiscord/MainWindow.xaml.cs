@@ -11,6 +11,7 @@ using System.Windows.Forms;
 using PlaystationDiscord.Exceptions;
 using PlaystationDiscord.Models;
 using System.Windows.Media.Imaging;
+using System.Globalization;
 
 namespace PlaystationDiscord
 {
@@ -113,7 +114,7 @@ namespace PlaystationDiscord
 
 			// TODO - Figure out why the pointer will point to junk memory after toggling the enable switch after some time (1 hour+)
 
-			var currentStatus = game.titleName ?? game.onlineStatus;
+			var currentStatus = game.titleName ?? CultureInfo.CurrentCulture.TextInfo.ToTitleCase(game.onlineStatus);
 			var encoded = Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(currentStatus));
 			encoded += "\0\0"; // Null terminate for the pointer
 
