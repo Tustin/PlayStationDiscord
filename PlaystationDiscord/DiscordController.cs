@@ -14,6 +14,7 @@ namespace PlaystationDiscord
 		public string PS4ApplicationId = "457775893746810880";
 		public string PS3ApplicationId = "459823182044725269";
 		public string optionalSteamId = string.Empty;
+		public bool Running { get; set; }
 
 		/// <summary>
 		///     Initializes Discord RPC
@@ -25,6 +26,13 @@ namespace PlaystationDiscord
 			handlers.disconnectedCallback += DisconnectedCallback;
 			handlers.errorCallback += ErrorCallback;
 			DiscordRPC.Initialize(applicationId == DiscordApplicationId.PS3 ? PS3ApplicationId : PS4ApplicationId, ref handlers, true, optionalSteamId);
+			this.Running = true;
+		}
+
+		public void Stop()
+		{
+			DiscordRPC.Shutdown();
+			this.Running = false;
 		}
 
 		public void ReadyCallback()

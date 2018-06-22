@@ -41,9 +41,7 @@ namespace PlaystationDiscord
 
 		private void Start()
 		{
-			new DiscordController().Initialize(CurrentConsole);
-
-			DiscordRPC.UpdatePresence(ref DiscordController.presence);
+			DiscordController.Initialize(CurrentConsole);
 
 			DiscordCts = new CancellationTokenSource();
 			TokenRefreshCts = new CancellationTokenSource();
@@ -56,7 +54,7 @@ namespace PlaystationDiscord
 		{
 			DiscordCts.Cancel();
 			TokenRefreshCts.Cancel();
-			DiscordRPC.Shutdown();
+			DiscordController.Stop();
 		}
 
 		public void Restart()
@@ -92,11 +90,27 @@ namespace PlaystationDiscord
 			}
 		}
 
-		public async Task Update(CancellationToken cts)
+		private async Task Update(CancellationToken cts)
 		{
 			while (!cts.IsCancellationRequested)
 			{
-				UpdatePresence();
+				var game = FetchGame();
+
+				if (game.platform != null)
+				{
+					if (!DiscordController.Running)
+					{
+						DiscordController.Initialize(CurrentConsole);
+					}
+
+					UpdatePresence(game);
+				}
+				else if (DiscordController.Running)
+				{
+					lblCurrentlyPlaying.Dispatcher.Invoke(new UpdateStatusControlsCallback(UpdateStatusControls),
+	new object[] { "Offline" });
+					DiscordController.Stop();
+				}
 
 				try
 				{
@@ -109,9 +123,8 @@ namespace PlaystationDiscord
 			}
 		}
 
-		private void UpdatePresence()
+		private void UpdatePresence(Presence game)
 		{
-			var game = FetchGame();
 
 			if (CurrentConsole != game.ToApplicationId())
 			{

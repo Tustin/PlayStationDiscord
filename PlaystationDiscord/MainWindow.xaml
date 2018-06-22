@@ -18,8 +18,8 @@
 
         <ToggleSwitch:ToggleSwitch Name="togEnableRP" IsOn="True"  HorizontalAlignment="Left" Width="35" Margin="200,60,0,0" PreviewMouseUp="togEnableRP_PreviewMouseUp" Grid.RowSpan="2" Height="34" VerticalAlignment="Top"/>
         <Label Name="lblEnableRP" Content="Enable Rich Presence" Margin="240,61,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.553,0.115" Height="26" HorizontalAlignment="Left" Width="122" Grid.RowSpan="2"/>
-        <Label Content="Label" Name="lblCurrentlyPlaying" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="200,53,0,0" Grid.Row="1"/>
-        <Label Content="Label" Name="lblLastUpdated" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="200,79,0,0" Grid.Row="1"/>
+        <Label Content="Offline" Name="lblCurrentlyPlaying" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="200,53,0,0" Grid.Row="1"/>
+        <Label Content="N/A" Name="lblLastUpdated" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="200,79,0,0" Grid.Row="1"/>
         <Button Content="Sign Out" Name="btnSignOut" Margin="336,126,0,0" Grid.Row="1" Click="btnSignOut_Click" HorizontalAlignment="Left" Width="75" Height="20" VerticalAlignment="Top"/>
     </Grid>
 </Window>
