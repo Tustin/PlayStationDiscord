@@ -127,6 +127,8 @@ namespace PlaystationDiscord
 			// https://github.com/discordapp/discord-rpc/issues/119#issuecomment-363916563
 
 			// TODO - Figure out why the pointer will point to junk memory after toggling the enable switch after some time (1 hour+)
+			// Also, now that PS3 is supported, we should probably trim the game name/status
+			// Since you can mod the PARAM.SFO for a game and give it a fake name, could cause an overflow issue with Discord
 
 			var currentStatus = game.titleName ?? CultureInfo.CurrentCulture.TextInfo.ToTitleCase(game.onlineStatus);
 			var encoded = Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(currentStatus));
@@ -160,10 +162,10 @@ namespace PlaystationDiscord
 			}
 
 			DiscordRPC.UpdatePresence(ref DiscordController.presence);
+
 			lblCurrentlyPlaying.Dispatcher.Invoke(new UpdateStatusControlsCallback(UpdateStatusControls),
 				new object[] { currentStatus });
 
-			// Leak? - Not sure if this is the right method to free the marshal'd mem
 			Marshal.FreeCoTaskMem(pointer);
 		}
 
@@ -189,6 +191,7 @@ namespace PlaystationDiscord
 				togEnableRP.Visibility = Visibility.Visible;
 				lblCurrentlyPlaying.Visibility = Visibility.Visible;
 				lblLastUpdated.Visibility = Visibility.Visible;
+				btnSignOut.Visibility = Visibility.Visible;
 			}
 			else
 			{
@@ -199,6 +202,7 @@ namespace PlaystationDiscord
 				togEnableRP.Visibility = Visibility.Hidden;
 				lblCurrentlyPlaying.Visibility = Visibility.Hidden;
 				lblLastUpdated.Visibility = Visibility.Hidden;
+				btnSignOut.Visibility = Visibility.Hidden;
 			}
 
 		}
@@ -294,6 +298,16 @@ namespace PlaystationDiscord
 			icon.DoubleClick += Icon_DoubleClick;
 
 			LoadComponents();
+		}
+
+		private void btnSignOut_Click(object sender, RoutedEventArgs e)
+		{
+			if (System.Windows.MessageBox.Show("Are you sure you want to sign out?", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+			{
+				Stop();
+				Playstation.Tokens.Delete();
+				SetControlState(false);
+			}
 		}
 	}
 }

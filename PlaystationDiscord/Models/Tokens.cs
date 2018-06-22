@@ -13,8 +13,14 @@ namespace PlaystationDiscord.Models
 
 		private static string ApplicationDataDirectory
 		{
+			get => Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/PlayStationDiscord";
+		}
+
+		private static string OldApplicationDataDirectory
+		{
 			get => Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/PS4Discord";
 		}
+
 
 		private static string TokensFile
 		{
@@ -27,6 +33,13 @@ namespace PlaystationDiscord.Models
 		public int expires_in { get; set; }
 		public string scope { get; set; }
 
+		// Will remove in the future
+		public static void Cleanup()
+		{
+			if (!Directory.Exists(OldApplicationDataDirectory)) return;
+			Directory.Delete(OldApplicationDataDirectory);
+		}
+
 		public void Write()
 		{
 			// TODO - Maybe use a serializer here for the entire Tokens object
@@ -38,6 +51,8 @@ namespace PlaystationDiscord.Models
 
 		public static Tokens Check()
 		{
+			Cleanup();
+
 			if (!File.Exists(TokensFile)) throw new FileNotFoundException();
 			var storedTokens = File.ReadAllText(TokensFile);
 			var tokens = Encoding.UTF8.GetString(ProtectedData.Unprotect(Convert.FromBase64String(storedTokens), null, DataProtectionScope.LocalMachine));
@@ -47,6 +62,12 @@ namespace PlaystationDiscord.Models
 				access_token = pieces[0],
 				refresh_token = pieces[1]
 			};
+		}
+
+		public void Delete()
+		{
+			if (!File.Exists(TokensFile)) throw new FileNotFoundException();
+			File.Delete(TokensFile);
 		}
 	}
 }
