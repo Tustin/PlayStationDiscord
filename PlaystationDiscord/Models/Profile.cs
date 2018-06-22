@@ -42,6 +42,20 @@ namespace PlaystationDiscord.Models
 		public string npTitleIconUrl { get; set; }
 		public string gameStatus { get; set; }
 		public bool hasBroadcastData { get; set; }
+
+		public DiscordApplicationId ToApplicationId()
+		{
+			switch (platform)
+			{
+				case "PS3": // Sony...
+					return DiscordApplicationId.PS3;
+				case "vita":
+					return DiscordApplicationId.Vita; // ??
+				case "ps4":
+				default:
+					return DiscordApplicationId.PS4;
+			}
+		}
 	}
 
 	public class Profile
@@ -72,5 +86,10 @@ namespace PlaystationDiscord.Models
 	public class ProfileRoot
 	{
 		public Profile profile { get; set; }
+
+		public Presence GetPresence()
+		{
+			return profile.presences[0];
+		}
 	}
 }

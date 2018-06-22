@@ -34,13 +34,14 @@ namespace PlaystationDiscord
 			{
 				m_Playstation = value;
 				value.Tokens.Write();
-				Start();
 			}
 		}
 
+		public DiscordApplicationId CurrentConsole { get; private set; }
+
 		private void Start()
 		{
-			new DiscordController().Initialize();
+			new DiscordController().Initialize(CurrentConsole);
 
 			DiscordRPC.UpdatePresence(ref DiscordController.presence);
 
@@ -49,6 +50,19 @@ namespace PlaystationDiscord
 
 			Task.Run(() => Update(DiscordCts.Token));
 			Task.Run(() => TokenRefresh(TokenRefreshCts.Token));
+		}
+
+		private void Stop()
+		{
+			DiscordCts.Cancel();
+			TokenRefreshCts.Cancel();
+			DiscordRPC.Shutdown();
+		}
+
+		public void Restart()
+		{
+			Stop();
+			Start();
 		}
 
 		private async Task TokenRefresh(CancellationToken cts)
@@ -78,13 +92,6 @@ namespace PlaystationDiscord
 			}
 		}
 
-		private void Stop()
-		{
-			DiscordCts.Cancel();
-			TokenRefreshCts.Cancel();
-			DiscordRPC.Shutdown();
-		}
-
 		public async Task Update(CancellationToken cts)
 		{
 			while (!cts.IsCancellationRequested)
@@ -106,6 +113,13 @@ namespace PlaystationDiscord
 		{
 			var game = FetchGame();
 
+			if (CurrentConsole != game.ToApplicationId())
+			{
+				CurrentConsole = game.ToApplicationId();
+				Restart();
+				return;
+			}
+
 			// Hack - This is a mess
 			// So apparently, either something with `ref` in C# OR something with Discord messes up Unicode literals
 			// To fix this, instead of passing a string to the struct and sending that over to RPC, we need to make a pointer to it
@@ -123,7 +137,7 @@ namespace PlaystationDiscord
 
 			DiscordController.presence = new DiscordRPC.RichPresence()
 			{
-				largeImageKey = "ps4_main",
+				largeImageKey = CurrentConsole == DiscordApplicationId.PS4 ? "ps4_main" : "ps3_main",
 				largeImageText = pointer,
 			};
 
@@ -159,10 +173,9 @@ namespace PlaystationDiscord
 			lblLastUpdated.Content = $"Last Updated: {DateTime.Now.ToShortTimeString()}";
 		}
 
-		private ProfileRoot GetProfile(int tries = 0)
+		private ProfileRoot GetProfile()
 		{
 			return Task.Run(async () => await Playstation.Info()).Result; // Deadlock
-
 		}
 
 		private void SetControlState(bool loggedIn)
@@ -192,49 +205,13 @@ namespace PlaystationDiscord
 
 		private Presence FetchGame()
 		{
-			var data = GetProfile();
-			return data.profile.presences[0];
+			return GetProfile().GetPresence();
 		}
 
-		private void LoadComponents()
+		private void SwitchConsole()
 		{
-			try
-			{
-				var tokens = Tokens.Check();
-
-				Playstation = new PSN(tokens).Refresh();
-
-				var info = GetProfile();
-
-				lblWelcome.Content = $"Welcome, {info.profile.onlineId}!";
-
-				var bitmap = new BitmapImage();
-				bitmap.BeginInit();
-				bitmap.UriSource = new Uri(info.profile.avatarUrls[1].avatarUrl, UriKind.Absolute);
-				bitmap.EndInit();
-
-				imgAvatar.Source = bitmap;
-
-				SetControlState(true);
-			}
-			catch (Exception)
-			{
-				SetControlState(false);
-			}
-		}
-
-		public MainWindow()
-		{
-			InitializeComponent();
-			NotifyIcon icon = new NotifyIcon()
-			{
-				Icon = Properties.Resources.icon,
-				Visible = true,
-				Text = "Discord Rich Presence for PlayStation"
-			};
-			icon.DoubleClick += Icon_DoubleClick;
-
-			LoadComponents();
+			Stop();
+			Start();
 		}
 
 		private void Icon_DoubleClick(object sender, EventArgs e)
@@ -271,6 +248,52 @@ namespace PlaystationDiscord
 		private void Window_StateChanged(object sender, EventArgs e)
 		{
 			if (WindowState == WindowState.Minimized) this.Hide();
+		}
+
+		private void LoadComponents()
+		{
+			try
+			{
+				var tokens = Tokens.Check();
+
+				Playstation = new PSN(tokens).Refresh();
+
+				var info = GetProfile();
+
+				CurrentConsole = info.GetPresence().ToApplicationId();
+
+				Start();
+
+				lblWelcome.Content = $"Welcome, {info.profile.onlineId}!";
+
+				var bitmap = new BitmapImage();
+				bitmap.BeginInit();
+				bitmap.UriSource = new Uri(info.profile.avatarUrls[1].avatarUrl, UriKind.Absolute);
+				bitmap.EndInit();
+
+				imgAvatar.Source = bitmap;
+
+				SetControlState(true);
+			}
+			catch (Exception)
+			{
+				SetControlState(false);
+			}
+		}
+
+		public MainWindow()
+		{
+			InitializeComponent();
+
+			NotifyIcon icon = new NotifyIcon()
+			{
+				Icon = Properties.Resources.icon,
+				Visible = true,
+				Text = "Discord Rich Presence for PlayStation"
+			};
+			icon.DoubleClick += Icon_DoubleClick;
+
+			LoadComponents();
 		}
 	}
 }

@@ -6,15 +6,19 @@
         xmlns:local="clr-namespace:PlaystationDiscord"
         xmlns:ToggleSwitch="clr-namespace:ToggleSwitch;assembly=ToggleSwitch" x:Class="PlaystationDiscord.MainWindow"
         mc:Ignorable="d"
-        Title="Discord Rich Presence for PlayStation 4" Closing="Window_Closing" MinHeight="267" MinWidth="429" Height="267" Width="429" StateChanged="Window_StateChanged">
+        Title="Discord Rich Presence for PlayStation" Closing="Window_Closing" MinHeight="267" MinWidth="429" Height="267" Width="429" StateChanged="Window_StateChanged">
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="20*"/>
+            <RowDefinition Height="39*"/>
+        </Grid.RowDefinitions>
         <Button Content="Sign In with PlayStation" x:Name="btnSignIn" HorizontalAlignment="Left" VerticalAlignment="Top" Width="160" Margin="25,16,0,0" Click="Button_Click" Height="25"/>
         <Label Content="Label" Height="26" x:Name="lblWelcome" VerticalAlignment="Top" Margin="25,10,22,0"/>
-        <Image HorizontalAlignment="Left" x:Name="imgAvatar" Height="160" VerticalAlignment="Top" Width="160" Margin="25,41,0,0"/>
+        <Image HorizontalAlignment="Left" x:Name="imgAvatar" Height="160" VerticalAlignment="Top" Width="160" Margin="25,41,0,0" Grid.RowSpan="2"/>
 
-        <ToggleSwitch:ToggleSwitch Name="togEnableRP" IsOn="True"  HorizontalAlignment="Left" Height="34" VerticalAlignment="Top" Width="56" Margin="200,61,0,0" PreviewMouseUp="togEnableRP_PreviewMouseUp"/>
-        <Label Name="lblEnableRP" Content="Enable Rich Presence" Margin="256,65,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.553,0.115" Height="26" HorizontalAlignment="Left" Width="122"/>
-        <Label Content="Label" Name="lblCurrentlyPlaying" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="200,133,0,0"/>
-        <Label Content="Label" Name="lblLastUpdated" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="200,159,0,0"/>
+        <ToggleSwitch:ToggleSwitch Name="togEnableRP" IsOn="True"  HorizontalAlignment="Left" Width="35" Margin="200,60,0,0" PreviewMouseUp="togEnableRP_PreviewMouseUp" Grid.RowSpan="2" Height="34" VerticalAlignment="Top"/>
+        <Label Name="lblEnableRP" Content="Enable Rich Presence" Margin="240,61,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.553,0.115" Height="26" HorizontalAlignment="Left" Width="122" Grid.RowSpan="2"/>
+        <Label Content="Label" Name="lblCurrentlyPlaying" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="200,53,0,0" Grid.Row="1"/>
+        <Label Content="Label" Name="lblLastUpdated" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="200,79,0,0" Grid.Row="1"/>
     </Grid>
 </Window>

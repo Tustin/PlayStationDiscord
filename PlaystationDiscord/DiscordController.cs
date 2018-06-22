@@ -10,19 +10,21 @@ namespace PlaystationDiscord
 	{
 		public DiscordRPC.RichPresence presence;
 		DiscordRPC.EventHandlers handlers;
-		public string applicationId = "457775893746810880";
+
+		public string PS4ApplicationId = "457775893746810880";
+		public string PS3ApplicationId = "459823182044725269";
 		public string optionalSteamId = string.Empty;
 
 		/// <summary>
 		///     Initializes Discord RPC
 		/// </summary>
-		public void Initialize()
+		public void Initialize(DiscordApplicationId applicationId)
 		{
 			handlers = new DiscordRPC.EventHandlers();
 			handlers.readyCallback = ReadyCallback;
 			handlers.disconnectedCallback += DisconnectedCallback;
 			handlers.errorCallback += ErrorCallback;
-			DiscordRPC.Initialize(applicationId, ref handlers, true, optionalSteamId);
+			DiscordRPC.Initialize(applicationId == DiscordApplicationId.PS3 ? PS3ApplicationId : PS4ApplicationId, ref handlers, true, optionalSteamId);
 		}
 
 		public void ReadyCallback()
