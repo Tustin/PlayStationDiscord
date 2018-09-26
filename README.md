@@ -1,5 +1,5 @@
 # PlaystationDiscord
-Discord Rich Presence for PlayStation (3/4) games.
+Discord Rich Presence for PlayStation 4, PlayStation 3, and PlayStation Vita games.
 
 ![rich presence ps4 img](https://pbs.twimg.com/media/Df7N41dU8AEX5vR.jpg)
 ![rich presence ps3 img](https://pbs.twimg.com/media/DgVUrvbVMAAxaqR.jpg)
