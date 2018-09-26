@@ -19,7 +19,7 @@ namespace PlayStationDiscord
 		{
 			try
 			{
-				return await "https://raw.githubusercontent.com/Tustin/PlayStationDiscord/master/PlaystationDiscord/Resources/games.json".GetJsonAsync<Dictionary<string, List<string>>>();
+				return await "https://raw.githubusercontent.com/Tustin/PlayStationDiscord/master/PlayStationDiscord/Resources/games.json".GetJsonAsync<Dictionary<string, List<string>>>();
 			} catch (Exception)
 			{
 				return new Dictionary<string, List<string>>();
