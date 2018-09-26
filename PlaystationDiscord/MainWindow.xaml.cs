@@ -167,23 +167,32 @@ namespace PlaystationDiscord
 			var pointer = Marshal.AllocCoTaskMem(Encoding.UTF8.GetByteCount(encoded));
 			Marshal.Copy(Encoding.UTF8.GetBytes(encoded), 0, pointer, Encoding.UTF8.GetByteCount(encoded));
 
-			DiscordController.presence = new DiscordRPC.RichPresence()
+			DiscordController.presence = new DiscordRPC.RichPresence
 			{
-				largeImageKey = CurrentConsole == DiscordApplicationId.PS4 ? "ps4_main" : "ps3_main",
-				largeImageText = pointer,
+				details = pointer
 			};
-
-			DiscordController.presence.details = pointer;
 
 			// Update game status (if applicable).
 			if (game.GameStatus != null)
 			{
-				DiscordController.presence.state = @game.GameStatus;
+				DiscordController.presence.state = game.GameStatus;
 			}
+
+			string largeImageKey = (CurrentConsole == DiscordApplicationId.PS4 ? "ps4_main" : "ps3_main");
+			string smallImageKey = default(string); // This will only be used if the user is playing a supported game.
 
 			// Only set the timestamp if the user is playing a game. Pointless otherwise.
 			if (game.NpTitleId != null)
 			{
+				// If the list of supported games contains the currently played game, lets use that custom icon.
+				if (Game.Games.Contains(game.NpTitleId, StringComparer.OrdinalIgnoreCase))
+				{
+					// Set the small image to the console being played.
+					smallImageKey = largeImageKey;
+					// Discord automatically lowercases all assets when uploaded.
+					largeImageKey = game.NpTitleId.ToLower();
+
+				}
 				// If the new game doesn't equal the last game, reset the time.
 				if (!game.NpTitleId.Equals(CurrentGame))
 				{
@@ -196,6 +205,10 @@ namespace PlaystationDiscord
 					DiscordController.presence.startTimestamp = (long)(TimeStarted - new DateTime(1970, 1, 1)).TotalSeconds;
 				}
 			}
+
+			DiscordController.presence.largeImageKey = largeImageKey;
+			DiscordController.presence.largeImageText = pointer;
+			DiscordController.presence.smallImageKey = smallImageKey;
 
 			DiscordRPC.UpdatePresence(ref DiscordController.presence);
 
@@ -315,6 +328,8 @@ namespace PlaystationDiscord
 
 		private void LoadComponents()
 		{
+			Task.Run(Game.FetchGames);
+
 			try
 			{
 				var account = TokenHandler.Check();
