@@ -133,4 +133,8 @@
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy /Y "$(ProjectDir)discord-rpc.dll" "$(TargetDir)discord-rpc.dll"
+copy /Y "$(ProjectDir)PlayStationSharp.dll" "$(TargetDir)PlayStationSharp.dll"</PostBuildEvent>
+  </PropertyGroup>
 </Project>
