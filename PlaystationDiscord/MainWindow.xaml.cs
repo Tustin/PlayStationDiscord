@@ -338,7 +338,6 @@ namespace PlaystationDiscord
 
 		private void LoadComponents()
 		{
-
 			try
 			{
 				var account = TokenHandler.Check();
