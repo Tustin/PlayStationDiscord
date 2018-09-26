@@ -6,16 +6,16 @@ using System.Windows.Input;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
-using PlaystationDiscord.Exceptions;
 using System.Windows.Media.Imaging;
 using System.Globalization;
+using System.Linq;
+using System.Collections.Generic;
+using System.Diagnostics;
 using PlayStationSharp.API;
 using PlayStationSharp.Model.ProfileJsonTypes;
-using System.Linq;
-using System.Windows.Interop;
-using System.Collections.Generic;
+using PlayStationDiscord.Exceptions;
 
-namespace PlaystationDiscord
+namespace PlayStationDiscord
 {
 	public partial class MainWindow : Window
 	{
@@ -26,6 +26,8 @@ namespace PlaystationDiscord
 
 		private string CurrentGame { get; set; } = default(string);
 		private DateTime TimeStarted { get; set; } = default(DateTime);
+
+		private NotifyIcon NotifyIcon { get; set; } = default(NotifyIcon);
 
 		public delegate void UpdateStatusControlsCallback(string currentGame);
 
@@ -39,12 +41,7 @@ namespace PlaystationDiscord
 			}
 		}
 
-		public Dictionary<DiscordApplicationId, ConsoleInformation> SupportedConsoles = new Dictionary<DiscordApplicationId, ConsoleInformation>()
-		{
-			{ DiscordApplicationId.PS4, new ConsoleInformation("PlayStation 4", "ps4_main", DiscordController.PS4ApplicationId) },
-			{ DiscordApplicationId.PS3, new ConsoleInformation("PlayStation 3", "ps3_main", DiscordController.PS3ApplicationId) },
-			{ DiscordApplicationId.Vita, new ConsoleInformation("PlayStation Vita", "vita_main", DiscordController.VitaApplicationId) }
-		};
+		public Dictionary<DiscordApplicationId, ConsoleInformation> SupportedConsoles { get; private set; }
 
 		public KeyValuePair<DiscordApplicationId, ConsoleInformation> CurrentConsole { get; private set; }
 
@@ -189,14 +186,14 @@ namespace PlaystationDiscord
 
 			string largeImageKey = CurrentConsole.Value.ImageKeyName;
 			// These will only be used if the user is playing a supported game.
-			string smallImageKey = default(string); 
+			string smallImageKey = default(string);
 			string smallImageText = default(string);
 
 			// Only set the timestamp if the user is playing a game. Pointless otherwise.
 			if (game.NpTitleId != null)
 			{
 				// If the list of supported games contains the currently played game, lets use that custom icon.
-				if (Game.Games.Contains(game.NpTitleId, StringComparer.OrdinalIgnoreCase))
+				if (CurrentConsole.Value.Games.Contains(game.NpTitleId, StringComparer.OrdinalIgnoreCase))
 				{
 					// Set the small image to the console being played.
 					smallImageKey = largeImageKey;
@@ -323,6 +320,7 @@ namespace PlaystationDiscord
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
 		{
 			StopDiscordControllers();
+			this.NotifyIcon.Visible = false;
 		}
 
 		private void togEnableRP_PreviewMouseUp(object sender, MouseButtonEventArgs e)
@@ -352,19 +350,39 @@ namespace PlaystationDiscord
 
 		public MainWindow()
 		{
+			if (!UpdateChecker.Latest)
+			{
+				if (System.Windows.Forms.MessageBox.Show($"A new version has been released.\n\n{UpdateChecker.Changelog}\n\nGo to download page?", "PlayStationDiscord Update", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) == System.Windows.Forms.DialogResult.Yes)
+				{
+					Process.Start(UpdateChecker.Url);
+					this.Close();
+				}
+			}
+
 			InitializeComponent();
 
-			NotifyIcon icon = new NotifyIcon()
+			//FlurlHttp.Configure(settings => {
+			//	settings.HttpClientFactory = new ProxyHttpClientFactory("http://localhost:8888");
+			//});
+
+			this.NotifyIcon = new NotifyIcon()
 			{
 				Icon = Properties.Resources.icon,
 				Visible = true,
 				Text = "Discord Rich Presence for PlayStation"
 			};
 
-			icon.DoubleClick += Icon_DoubleClick;
+			this.NotifyIcon.DoubleClick += Icon_DoubleClick;
 
 			// Run our task to grab the supported game SKUs from the repo.
-			Task.Run(Game.FetchGames);
+			var games = Task.Run(Game.FetchGames).Result;
+
+			this.SupportedConsoles = new Dictionary<DiscordApplicationId, ConsoleInformation>()
+			{
+				{ DiscordApplicationId.PS4, new ConsoleInformation("PlayStation 4", "ps4_main", DiscordController.PS4ApplicationId, games.FirstOrDefault(a => a.Key == "ps4").Value) },
+				{ DiscordApplicationId.PS3, new ConsoleInformation("PlayStation 3", "ps3_main", DiscordController.PS3ApplicationId, games.FirstOrDefault(a => a.Key == "ps3").Value) },
+				{ DiscordApplicationId.Vita, new ConsoleInformation("PlayStation Vita", "vita_main", DiscordController.VitaApplicationId, games.FirstOrDefault(a => a.Key == "vita").Value) }
+			};
 
 			LoadComponents();
 		}

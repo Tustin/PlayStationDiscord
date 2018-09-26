@@ -3,8 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:PlaystationDiscord"
-        xmlns:ToggleSwitch="clr-namespace:ToggleSwitch;assembly=ToggleSwitch" x:Class="PlaystationDiscord.MainWindow"
+        xmlns:local="clr-namespace:PlayStationDiscord"
+        xmlns:ToggleSwitch="clr-namespace:ToggleSwitch;assembly=ToggleSwitch" x:Class="PlayStationDiscord.MainWindow"
         mc:Ignorable="d"
         Title="Discord Rich Presence for PlayStation" Closing="Window_Closing" MinHeight="267" MinWidth="429" Height="415.667" Width="393" StateChanged="Window_StateChanged" ResizeMode="CanMinimize">
     <Grid Background="#FF15358A">

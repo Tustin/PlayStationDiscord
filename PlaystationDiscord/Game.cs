@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Flurl.Http;
 
-namespace PlaystationDiscord
+namespace PlayStationDiscord
 {
 	static class Game
 	{
-		public static List<string> Games { get; private set; } = new List<string>();
 
 		/// <summary>
 		/// Fetches the list of supported games from the repo.
@@ -18,11 +14,9 @@ namespace PlaystationDiscord
 		/// 
 		/// </summary>
 		/// <returns>The list of game SKUs.</returns>
-		public static async Task<List<string>> FetchGames()
+		public static async Task<Dictionary<string, List<string>>> FetchGames()
 		{
-			Games = await "https://raw.githubusercontent.com/Tustin/PlayStationDiscord/master/PlaystationDiscord/Resources/games.json".GetJsonAsync<List<string>>();
-
-			return Games;
+			return await "https://raw.githubusercontent.com/Tustin/PlayStationDiscord/master/PlaystationDiscord/Resources/games.json".GetJsonAsync<Dictionary<string, List<string>>>();
 		}
 
 	}

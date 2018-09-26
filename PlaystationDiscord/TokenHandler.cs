@@ -6,7 +6,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace PlaystationDiscord
+namespace PlayStationDiscord
 {
 	public static class TokenHandler
 	{
