@@ -50,10 +50,9 @@ namespace PlayStationDiscord
 		{
 			switch (console.Platform)
 			{
-				case "PS3": // Sony...
+				case "PS3": 
 					return SupportedConsoles.First(a => a.Key == DiscordApplicationId.PS3);
-				case "vita": // It's one of these two but I don't know which one for sure atm.
-				case "Vita":
+				case "PSVITA": 
 					return SupportedConsoles.First(a => a.Key == DiscordApplicationId.Vita);
 				case "ps4":
 				default:
