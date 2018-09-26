@@ -3,21 +3,22 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using System.Security.Cryptography;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
 using PlaystationDiscord.Exceptions;
-using PlaystationDiscord.Models;
 using System.Windows.Media.Imaging;
 using System.Globalization;
+using PlayStationSharp.API;
+using PlayStationSharp.Model.ProfileJsonTypes;
+using System.Linq;
+using System.Windows.Interop;
 
 namespace PlaystationDiscord
 {
 	public partial class MainWindow : Window
 	{
-		private PSN m_Playstation;
+		private Account m_PlayStationAccount;
 		private DiscordController DiscordController { get; set; } = new DiscordController();
 		private CancellationTokenSource DiscordCts = new CancellationTokenSource();
 		private CancellationTokenSource TokenRefreshCts = new CancellationTokenSource();
@@ -27,59 +28,73 @@ namespace PlaystationDiscord
 
 		public delegate void UpdateStatusControlsCallback(string currentGame);
 
-		public PSN Playstation
+		public Account PlayStationAccount
 		{
-			private get => m_Playstation;
+			private get => m_PlayStationAccount;
 			set
 			{
-				m_Playstation = value;
-				value.Tokens.Write();
+				m_PlayStationAccount = value;
+				TokenHandler.Write(value.Tokens); 
 			}
 		}
 
 		public DiscordApplicationId CurrentConsole { get; private set; }
 
-		private void Start()
+		public DiscordApplicationId GetApplicationId(PresenceModel console)
+		{
+			switch (console.Platform)
+			{
+				case "PS3": // Sony...
+					return DiscordApplicationId.PS3;
+				case "vita":
+					return DiscordApplicationId.Vita;
+				case "ps4":
+				default:
+					return DiscordApplicationId.PS4;
+			}
+		}
+
+		private void StartDiscordControllers()
 		{
 			DiscordController.Initialize(CurrentConsole);
 
 			DiscordCts = new CancellationTokenSource();
 			TokenRefreshCts = new CancellationTokenSource();
 
-			Task.Run(() => Update(DiscordCts.Token));
-			Task.Run(() => TokenRefresh(TokenRefreshCts.Token));
+			Task.Run(() => UpdateTask(DiscordCts.Token));
+			Task.Run(() => TokenRefreshTask(TokenRefreshCts.Token));
 		}
 
-		private void Stop()
+		private void StopDiscordControllers()
 		{
 			DiscordCts.Cancel();
 			TokenRefreshCts.Cancel();
 			DiscordController.Stop();
 		}
 
-		public void Restart()
+		public void RestartDiscordControllers()
 		{
-			Stop();
-			Start();
+			StopDiscordControllers();
+			StartDiscordControllers();
 		}
 
-		private async Task TokenRefresh(CancellationToken cts)
+		private async Task TokenRefreshTask(CancellationToken cts)
 		{
 			while (!cts.IsCancellationRequested)
 			{
 				try
 				{
-					await Task.Delay(TimeSpan.FromSeconds(Playstation.Tokens.expires_in - 60), cts);
+					await Task.Delay(TimeSpan.FromSeconds(PlayStationAccount.Tokens.ExpiresIn - 60), cts);
 
 					try
 					{
-						Playstation.Refresh();
+						PlayStationAccount.Tokens.RefreshTokens();
 					}
 					catch (ExpiredRefreshTokenException)
 					{
 						// If we get here, it means both the access token and refresh tokens have expired
 						// Might not be necessary but better to have it than not
-						Stop();
+						StopDiscordControllers();
 						break; // Pointless? Stop() will cancel this thread anyways
 					}
 				}
@@ -90,20 +105,20 @@ namespace PlaystationDiscord
 			}
 		}
 
-		private async Task Update(CancellationToken cts)
+		private async Task UpdateTask(CancellationToken cts)
 		{
 			while (!cts.IsCancellationRequested)
 			{
 				var game = FetchGame();
 
-				if (game.platform != null)
+				if (game.Platform != null)
 				{
 					if (!DiscordController.Running)
 					{
 						DiscordController.Initialize(CurrentConsole);
 					}
 
-					UpdatePresence(game);
+					UpdateDiscordPresence(game);
 				}
 				else if (DiscordController.Running)
 				{
@@ -123,13 +138,15 @@ namespace PlaystationDiscord
 			}
 		}
 
-		private void UpdatePresence(Presence game)
+		private void UpdateDiscordPresence(PresenceModel game)
 		{
+			var applicationId = GetApplicationId(game);
 
-			if (CurrentConsole != game.ToApplicationId())
+			// If the current console doesn't equal the latest game's console, update it and restart.
+			if (CurrentConsole != applicationId)
 			{
-				CurrentConsole = game.ToApplicationId();
-				Restart();
+				CurrentConsole = applicationId;
+				RestartDiscordControllers();
 				return;
 			}
 
@@ -143,7 +160,7 @@ namespace PlaystationDiscord
 			// Also, now that PS3 is supported, we should probably trim the game name/status
 			// Since you can mod the PARAM.SFO for a game and give it a fake name, could cause an overflow issue with Discord
 
-			var currentStatus = game.titleName ?? CultureInfo.CurrentCulture.TextInfo.ToTitleCase(game.onlineStatus);
+			var currentStatus = game.TitleName ?? CultureInfo.CurrentCulture.TextInfo.ToTitleCase(game.OnlineStatus);
 			var encoded = Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(currentStatus));
 			encoded += "\0\0"; // Null terminate for the pointer
 
@@ -158,14 +175,20 @@ namespace PlaystationDiscord
 
 			DiscordController.presence.details = pointer;
 
-			if (game.gameStatus != null) DiscordController.presence.state = @game.gameStatus;
-
-			if (game.npTitleId != null)
+			// Update game status (if applicable).
+			if (game.GameStatus != null)
 			{
-				if (!game.npTitleId.Equals(CurrentGame))
+				DiscordController.presence.state = @game.GameStatus;
+			}
+
+			// Only set the timestamp if the user is playing a game. Pointless otherwise.
+			if (game.NpTitleId != null)
+			{
+				// If the new game doesn't equal the last game, reset the time.
+				if (!game.NpTitleId.Equals(CurrentGame))
 				{
 					DiscordController.presence.startTimestamp = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
-					CurrentGame = game.npTitleId;
+					CurrentGame = game.NpTitleId;
 					TimeStarted = DateTime.UtcNow;
 				}
 				else
@@ -176,6 +199,7 @@ namespace PlaystationDiscord
 
 			DiscordRPC.UpdatePresence(ref DiscordController.presence);
 
+			// Update the stuff on the form.
 			lblCurrentlyPlaying.Dispatcher.Invoke(new UpdateStatusControlsCallback(UpdateStatusControls),
 				new object[] { currentStatus });
 
@@ -186,11 +210,6 @@ namespace PlaystationDiscord
 		{
 			lblCurrentlyPlaying.Content = $"Status: {currentGame}";
 			lblLastUpdated.Content = $"Last Updated: {DateTime.Now.ToShortTimeString()}";
-		}
-
-		private ProfileRoot GetProfile()
-		{
-			return Task.Run(async () => await Playstation.Info()).Result; // Deadlock
 		}
 
 		private void SetControlState(bool loggedIn)
@@ -220,15 +239,19 @@ namespace PlaystationDiscord
 
 		}
 
-		private Presence FetchGame()
+		private PresenceModel FetchGame()
 		{
-			return GetProfile().GetPresence();
+			var presences = PlayStationAccount.GetInfo().Information.Presences;
+
+			if (presences.Count == 0) return null;
+
+			return presences[0];
 		}
 
 		private void SwitchConsole()
 		{
-			Stop();
-			Start();
+			StopDiscordControllers();
+			StartDiscordControllers();
 		}
 
 		private void Icon_DoubleClick(object sender, EventArgs e)
@@ -239,27 +262,50 @@ namespace PlaystationDiscord
 
 		private void Button_Click(object sender, RoutedEventArgs e)
 		{
-			var signIn = new SignIn();
-			signIn.Closed += SignIn_Closed;
-			signIn.Show();
+			var account = Auth.CreateLogin();
+
+			// Login form was closed by the user.
+			if (account == null) return;
+
+			Instantiate(account);
+		}
+
+		private void Instantiate(Account account)
+		{
+			this.PlayStationAccount = account;
+
+			this.CurrentConsole = GetApplicationId(FetchGame());
+
+			lblWelcome.Content = this.PlayStationAccount.Profile.OnlineId;
+
+			var bitmap = new BitmapImage();
+			bitmap.BeginInit();
+			bitmap.UriSource = new Uri(this.PlayStationAccount.Profile.AvatarUrls[1].AvatarUrl, UriKind.Absolute);
+			bitmap.EndInit();
+
+			imgAvatar.Source = bitmap;
+
+			SetControlState(true);
+
+			StartDiscordControllers();
 		}
 
 		private void SignIn_Closed(object sender, EventArgs e)
 		{
-			if (Playstation == null) return;
+			if (PlayStationAccount == null) return;
 
 			LoadComponents();
 		}
 
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
 		{
-			Stop();
+			StopDiscordControllers();
 		}
 
 		private void togEnableRP_PreviewMouseUp(object sender, MouseButtonEventArgs e)
 		{
-			if (togEnableRP.IsOn) Stop();
-			else Start();
+			if (togEnableRP.IsOn) StopDiscordControllers();
+			else StartDiscordControllers();
 		}
 
 		private void Window_StateChanged(object sender, EventArgs e)
@@ -271,26 +317,9 @@ namespace PlaystationDiscord
 		{
 			try
 			{
-				var tokens = Tokens.Check();
+				var account = TokenHandler.Check();
 
-				Playstation = new PSN(tokens).Refresh();
-
-				var info = GetProfile();
-
-				CurrentConsole = info.GetPresence().ToApplicationId();
-
-				Start();
-
-				lblWelcome.Content = $"Welcome, {info.profile.onlineId}!";
-
-				var bitmap = new BitmapImage();
-				bitmap.BeginInit();
-				bitmap.UriSource = new Uri(info.profile.avatarUrls[1].avatarUrl, UriKind.Absolute);
-				bitmap.EndInit();
-
-				imgAvatar.Source = bitmap;
-
-				SetControlState(true);
+				Instantiate(account);
 			}
 			catch (Exception)
 			{
@@ -317,8 +346,7 @@ namespace PlaystationDiscord
 		{
 			if (System.Windows.MessageBox.Show("Are you sure you want to sign out?", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
 			{
-				Stop();
-				Playstation.Tokens.Delete();
+				StopDiscordControllers();
 				SetControlState(false);
 			}
 		}

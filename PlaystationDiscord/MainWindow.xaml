@@ -6,20 +6,20 @@
         xmlns:local="clr-namespace:PlaystationDiscord"
         xmlns:ToggleSwitch="clr-namespace:ToggleSwitch;assembly=ToggleSwitch" x:Class="PlaystationDiscord.MainWindow"
         mc:Ignorable="d"
-        Title="Discord Rich Presence for PlayStation" Closing="Window_Closing" MinHeight="267" MinWidth="429" Height="267" Width="429" StateChanged="Window_StateChanged">
-    <Grid>
+        Title="Discord Rich Presence for PlayStation" Closing="Window_Closing" MinHeight="267" MinWidth="429" Height="415.667" Width="393" StateChanged="Window_StateChanged" ResizeMode="CanMinimize">
+    <Grid Background="#FF15358A">
         <Grid.RowDefinitions>
             <RowDefinition Height="20*"/>
             <RowDefinition Height="39*"/>
         </Grid.RowDefinitions>
-        <Button Content="Sign In with PlayStation" x:Name="btnSignIn" HorizontalAlignment="Left" VerticalAlignment="Top" Width="160" Margin="25,16,0,0" Click="Button_Click" Height="25"/>
-        <Label Content="Label" Height="26" x:Name="lblWelcome" VerticalAlignment="Top" Margin="25,10,22,0"/>
-        <Image HorizontalAlignment="Left" x:Name="imgAvatar" Height="160" VerticalAlignment="Top" Width="160" Margin="25,41,0,0" Grid.RowSpan="2"/>
+        <Button Content="Sign In with PlayStation" x:Name="btnSignIn" HorizontalAlignment="Left" VerticalAlignment="Top" Width="214" Margin="104,10,0,0" Click="Button_Click" Height="60" Grid.Row="1" BorderBrush="White" Background="#FF2C98F0" Foreground="White"/>
+        <Label Content="Label" Height="40" x:Name="lblWelcome" VerticalAlignment="Top" Margin="134,10,130,0" Foreground="White" FontSize="24" HorizontalAlignment="Center" FontFamily="Segoe UI Light" Width="157" HorizontalContentAlignment="Center"/>
+        <Image x:Name="imgAvatar" Height="160" VerticalAlignment="Top" Margin="134,50,130,0" Grid.RowSpan="2"/>
 
-        <ToggleSwitch:ToggleSwitch Name="togEnableRP" IsOn="True"  HorizontalAlignment="Left" Width="35" Margin="200,60,0,0" PreviewMouseUp="togEnableRP_PreviewMouseUp" Grid.RowSpan="2" Height="34" VerticalAlignment="Top"/>
-        <Label Name="lblEnableRP" Content="Enable Rich Presence" Margin="240,61,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.553,0.115" Height="26" HorizontalAlignment="Left" Width="122" Grid.RowSpan="2"/>
-        <Label Content="Offline" Name="lblCurrentlyPlaying" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="200,53,0,0" Grid.Row="1"/>
-        <Label Content="N/A" Name="lblLastUpdated" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="200,79,0,0" Grid.Row="1"/>
-        <Button Content="Sign Out" Name="btnSignOut" Margin="336,126,0,0" Grid.Row="1" Click="btnSignOut_Click" HorizontalAlignment="Left" Width="75" Height="20" VerticalAlignment="Top"/>
+        <ToggleSwitch:ToggleSwitch Name="togEnableRP" IsOn="True"  HorizontalAlignment="Left" Width="35" Margin="140,155,0,0" PreviewMouseUp="togEnableRP_PreviewMouseUp" Height="34" VerticalAlignment="Top" Grid.Row="1"/>
+        <Label Name="lblEnableRP" Content="Enable Rich Presence" Margin="180,156,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.553,0.115" Height="26" HorizontalAlignment="Left" Width="122" Grid.Row="1" Foreground="White"/>
+        <Label Content="Offline" Name="lblCurrentlyPlaying" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="134,95,0,0" Grid.Row="1" Foreground="White"/>
+        <Label Content="N/A" Name="lblLastUpdated" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="134,121,0,0" Grid.Row="1" Foreground="White"/>
+        <Button Content="Sign Out" x:Name="btnSignOut" HorizontalAlignment="Left" VerticalAlignment="Top" Width="157" Margin="134,194,0,0" Click="btnSignOut_Click" Height="25" Grid.Row="1" BorderBrush="White" Background="#FF2C98F0" Foreground="White" ForceCursor="True" />
     </Grid>
 </Window>
