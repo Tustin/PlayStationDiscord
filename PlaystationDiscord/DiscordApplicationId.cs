@@ -10,6 +10,6 @@ namespace PlaystationDiscord
 	{
 		PS4,
 		PS3,
-		Vita // Maybe? Haven't checked or added this yet
+		Vita
 	}
 }

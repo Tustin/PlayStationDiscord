@@ -9,9 +9,7 @@ namespace PlaystationDiscord
 {
 	static class Game
 	{
-
-		public static List<string> Games { get; private set; }
-
+		public static List<string> Games { get; private set; } = new List<string>();
 
 		/// <summary>
 		/// Fetches the list of supported games from the repo.

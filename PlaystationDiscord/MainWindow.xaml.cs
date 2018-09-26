@@ -13,6 +13,7 @@ using PlayStationSharp.API;
 using PlayStationSharp.Model.ProfileJsonTypes;
 using System.Linq;
 using System.Windows.Interop;
+using System.Collections.Generic;
 
 namespace PlaystationDiscord
 {
@@ -34,23 +35,31 @@ namespace PlaystationDiscord
 			set
 			{
 				m_PlayStationAccount = value;
-				TokenHandler.Write(value.Tokens); 
+				TokenHandler.Write(value.Tokens);
 			}
 		}
 
-		public DiscordApplicationId CurrentConsole { get; private set; }
+		public Dictionary<DiscordApplicationId, ConsoleInformation> SupportedConsoles = new Dictionary<DiscordApplicationId, ConsoleInformation>()
+		{
+			{ DiscordApplicationId.PS4, new ConsoleInformation("PlayStation 4", "ps4_main", DiscordController.PS4ApplicationId) },
+			{ DiscordApplicationId.PS3, new ConsoleInformation("PlayStation 3", "ps3_main", DiscordController.PS3ApplicationId) },
+			{ DiscordApplicationId.Vita, new ConsoleInformation("PlayStation Vita", "vita_main", DiscordController.VitaApplicationId) }
+		};
 
-		public DiscordApplicationId GetApplicationId(PresenceModel console)
+		public KeyValuePair<DiscordApplicationId, ConsoleInformation> CurrentConsole { get; private set; }
+
+		public KeyValuePair<DiscordApplicationId, ConsoleInformation> GetConsoleFromApplicationId(PresenceModel console)
 		{
 			switch (console.Platform)
 			{
 				case "PS3": // Sony...
-					return DiscordApplicationId.PS3;
-				case "vita":
-					return DiscordApplicationId.Vita;
+					return SupportedConsoles.First(a => a.Key == DiscordApplicationId.PS3);
+				case "vita": // It's one of these two but I don't know which one for sure atm.
+				case "Vita":
+					return SupportedConsoles.First(a => a.Key == DiscordApplicationId.Vita);
 				case "ps4":
 				default:
-					return DiscordApplicationId.PS4;
+					return SupportedConsoles.First(a => a.Key == DiscordApplicationId.PS4);
 			}
 		}
 
@@ -140,12 +149,12 @@ namespace PlaystationDiscord
 
 		private void UpdateDiscordPresence(PresenceModel game)
 		{
-			var applicationId = GetApplicationId(game);
+			var console = GetConsoleFromApplicationId(game);
 
 			// If the current console doesn't equal the latest game's console, update it and restart.
-			if (CurrentConsole != applicationId)
+			if (CurrentConsole.Key != console.Key)
 			{
-				CurrentConsole = applicationId;
+				CurrentConsole = SupportedConsoles.FirstOrDefault(a => a.Key == console.Key);
 				RestartDiscordControllers();
 				return;
 			}
@@ -178,8 +187,10 @@ namespace PlaystationDiscord
 				DiscordController.presence.state = game.GameStatus;
 			}
 
-			string largeImageKey = (CurrentConsole == DiscordApplicationId.PS4 ? "ps4_main" : "ps3_main");
-			string smallImageKey = default(string); // This will only be used if the user is playing a supported game.
+			string largeImageKey = CurrentConsole.Value.ImageKeyName;
+			// These will only be used if the user is playing a supported game.
+			string smallImageKey = default(string); 
+			string smallImageText = default(string);
 
 			// Only set the timestamp if the user is playing a game. Pointless otherwise.
 			if (game.NpTitleId != null)
@@ -189,6 +200,7 @@ namespace PlaystationDiscord
 				{
 					// Set the small image to the console being played.
 					smallImageKey = largeImageKey;
+					smallImageText = CurrentConsole.Value.Name;
 					// Discord automatically lowercases all assets when uploaded.
 					largeImageKey = game.NpTitleId.ToLower();
 
@@ -209,7 +221,11 @@ namespace PlaystationDiscord
 			DiscordController.presence.largeImageKey = largeImageKey;
 			DiscordController.presence.largeImageText = pointer;
 			DiscordController.presence.smallImageKey = smallImageKey;
+			// This should be fine to keep as a string for now (the smallImageText field in DiscordController), 
+			// but if for some reason there is ever unicode characters in the string, it'll need to be changed to a pointer.
+			DiscordController.presence.smallImageText = smallImageText;
 
+			// Send the presence over to Discord.
 			DiscordRPC.UpdatePresence(ref DiscordController.presence);
 
 			// Update the stuff on the form.
@@ -261,12 +277,6 @@ namespace PlaystationDiscord
 			return presences[0];
 		}
 
-		private void SwitchConsole()
-		{
-			StopDiscordControllers();
-			StartDiscordControllers();
-		}
-
 		private void Icon_DoubleClick(object sender, EventArgs e)
 		{
 			this.Show();
@@ -287,7 +297,7 @@ namespace PlaystationDiscord
 		{
 			this.PlayStationAccount = account;
 
-			this.CurrentConsole = GetApplicationId(FetchGame());
+			this.CurrentConsole = GetConsoleFromApplicationId(FetchGame());
 
 			lblWelcome.Content = this.PlayStationAccount.Profile.OnlineId;
 
@@ -328,7 +338,6 @@ namespace PlaystationDiscord
 
 		private void LoadComponents()
 		{
-			Task.Run(Game.FetchGames);
 
 			try
 			{
@@ -352,7 +361,11 @@ namespace PlaystationDiscord
 				Visible = true,
 				Text = "Discord Rich Presence for PlayStation"
 			};
+
 			icon.DoubleClick += Icon_DoubleClick;
+
+			// Run our task to grab the supported game SKUs from the repo.
+			Task.Run(Game.FetchGames);
 
 			LoadComponents();
 		}

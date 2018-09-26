@@ -76,6 +76,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="ConsoleInformation.cs" />
     <Compile Include="DiscordApplicationId.cs" />
     <Compile Include="DiscordController.cs" />
     <Compile Include="DiscordRPC.cs" />
