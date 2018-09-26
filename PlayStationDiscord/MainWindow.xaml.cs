@@ -14,6 +14,7 @@ using System.Diagnostics;
 using PlayStationSharp.API;
 using PlayStationSharp.Model.ProfileJsonTypes;
 using PlayStationDiscord.Exceptions;
+using Newtonsoft.Json;
 
 namespace PlayStationDiscord
 {
@@ -95,13 +96,14 @@ namespace PlayStationDiscord
 					try
 					{
 						PlayStationAccount.Tokens.RefreshTokens();
+						Logger.Write("Refreshed authorization tokens");
 					}
 					catch (ExpiredRefreshTokenException)
 					{
 						// If we get here, it means both the access token and refresh tokens have expired
 						// Might not be necessary but better to have it than not
 						StopDiscordControllers();
-						break; // Pointless? Stop() will cancel this thread anyways
+						break;
 					}
 				}
 				catch (TaskCanceledException)
@@ -151,6 +153,7 @@ namespace PlayStationDiscord
 			// If the current console doesn't equal the latest game's console, update it and restart.
 			if (CurrentConsole.Key != console.Key)
 			{
+				Logger.Write($"Detected console switch: old = {CurrentConsole.Value.Name}, new = {console.Value.Name}");
 				CurrentConsole = SupportedConsoles.FirstOrDefault(a => a.Key == console.Key);
 				RestartDiscordControllers();
 				return;
@@ -294,7 +297,11 @@ namespace PlayStationDiscord
 		{
 			this.PlayStationAccount = account;
 
-			this.CurrentConsole = GetConsoleFromApplicationId(FetchGame());
+			var game = FetchGame();
+
+			Logger.Write($"Game = {JsonConvert.SerializeObject(game)}");
+
+			this.CurrentConsole = GetConsoleFromApplicationId(game);
 
 			lblWelcome.Content = this.PlayStationAccount.Profile.OnlineId;
 

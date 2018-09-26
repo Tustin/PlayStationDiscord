@@ -85,6 +85,7 @@
     <Compile Include="FlurlProxy.cs" />
     <Compile Include="Game.cs" />
     <Compile Include="GitHubRelease.cs" />
+    <Compile Include="Logger.cs" />
     <Compile Include="TokenHandler.cs" />
     <Compile Include="UpdateChecker.cs" />
     <Page Include="MainWindow.xaml">
