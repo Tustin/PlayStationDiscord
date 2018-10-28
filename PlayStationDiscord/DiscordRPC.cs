@@ -45,7 +45,7 @@ namespace PlayStationDiscord
 		[System.Serializable, StructLayout(LayoutKind.Sequential)]
 		public struct RichPresence
 		{
-            public IntPtr state; /* max 128 bytes */
+            		public IntPtr state; /* max 128 bytes */
 			public IntPtr details; /* max 128 bytes */
 			public long startTimestamp;
 			public long endTimestamp;
