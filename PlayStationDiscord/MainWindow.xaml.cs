@@ -145,7 +145,23 @@ namespace PlayStationDiscord
 			}
 		}
 
-		private void UpdateDiscordPresence(PresenceModel game)
+	    // Hack - This is a mess
+	    // So apparently, either something with `ref` in C# OR something with Discord messes up Unicode literals
+	    // To fix this, instead of passing a string to the struct and sending that over to RPC, we need to make a pointer to it
+	    // Dirty, but fixes the Unicode characters.
+	    // https://github.com/discordapp/discord-rpc/issues/119#issuecomment-363916563
+
+	    // TODO - Figure out why the pointer will point to junk memory after toggling the enable switch after some time (1 hour+)
+	    // Also, now that PS3 is supported, we should probably trim the game name/status
+	    // Since you can mod the PARAM.SFO for a game and give it a fake name, could cause an overflow issue with Discord
+        private static IntPtr StringToPointer(string encodedString)
+        {
+            var pointer = Marshal.AllocCoTaskMem(Encoding.UTF8.GetByteCount(encodedString));
+            Marshal.Copy(Encoding.UTF8.GetBytes(encodedString), 0, pointer, Encoding.UTF8.GetByteCount(encodedString));
+            return pointer;
+        }
+
+        private void UpdateDiscordPresence(PresenceModel game)
 		{
 			var console = GetConsoleFromApplicationId(game);
 
@@ -158,32 +174,24 @@ namespace PlayStationDiscord
 				return;
 			}
 
-			// Hack - This is a mess
-			// So apparently, either something with `ref` in C# OR something with Discord messes up Unicode literals
-			// To fix this, instead of passing a string to the struct and sending that over to RPC, we need to make a pointer to it
-			// Dirty, but fixes the Unicode characters.
-			// https://github.com/discordapp/discord-rpc/issues/119#issuecomment-363916563
-
-			// TODO - Figure out why the pointer will point to junk memory after toggling the enable switch after some time (1 hour+)
-			// Also, now that PS3 is supported, we should probably trim the game name/status
-			// Since you can mod the PARAM.SFO for a game and give it a fake name, could cause an overflow issue with Discord
-
 			var currentStatus = game.TitleName ?? CultureInfo.CurrentCulture.TextInfo.ToTitleCase(game.OnlineStatus);
 			var encoded = Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(currentStatus));
 			encoded += "\0\0"; // Null terminate for the pointer
 
-			var pointer = Marshal.AllocCoTaskMem(Encoding.UTF8.GetByteCount(encoded));
-			Marshal.Copy(Encoding.UTF8.GetBytes(encoded), 0, pointer, Encoding.UTF8.GetByteCount(encoded));
+		    var detailsPointer = StringToPointer(encoded);
 
-			DiscordController.presence = new DiscordRPC.RichPresence
+		    var gameStatusPointer = StringToPointer(game.GameStatus ?? "");
+
+
+            DiscordController.presence = new DiscordRPC.RichPresence
 			{
-				details = pointer
-			};
+				details = detailsPointer
+            };
 
 			// Update game status (if applicable).
 			if (game.GameStatus != null)
 			{
-				DiscordController.presence.state = game.GameStatus;
+                DiscordController.presence.state = gameStatusPointer;
 			}
 
 			string largeImageKey = CurrentConsole.Value.ImageKeyName;
@@ -218,7 +226,7 @@ namespace PlayStationDiscord
 			}
 
 			DiscordController.presence.largeImageKey = largeImageKey;
-			DiscordController.presence.largeImageText = pointer;
+			DiscordController.presence.largeImageText = detailsPointer;
 			DiscordController.presence.smallImageKey = smallImageKey;
 			// This should be fine to keep as a string for now (the smallImageText field in DiscordController), 
 			// but if for some reason there is ever unicode characters in the string, it'll need to be changed to a pointer.
@@ -231,7 +239,8 @@ namespace PlayStationDiscord
 			lblCurrentlyPlaying.Dispatcher.Invoke(new UpdateStatusControlsCallback(UpdateStatusControls),
 				new object[] { currentStatus });
 
-			Marshal.FreeCoTaskMem(pointer);
+			Marshal.FreeCoTaskMem(detailsPointer);
+			Marshal.FreeCoTaskMem(gameStatusPointer);
 		}
 
 		private void UpdateStatusControls(string currentGame)
