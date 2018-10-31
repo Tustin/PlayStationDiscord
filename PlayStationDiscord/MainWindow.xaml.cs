@@ -156,9 +156,10 @@ namespace PlayStationDiscord
 	    // Since you can mod the PARAM.SFO for a game and give it a fake name, could cause an overflow issue with Discord
         private static IntPtr StringToPointer(string encodedString)
         {
-            var pointer = Marshal.AllocCoTaskMem(Encoding.UTF8.GetByteCount(encodedString));
-            Marshal.Copy(Encoding.UTF8.GetBytes(encodedString), 0, pointer, Encoding.UTF8.GetByteCount(encodedString));
-            return pointer;
+			encodedString += "\0\0";
+			var pointer = Marshal.AllocCoTaskMem(Encoding.UTF8.GetByteCount(encodedString));
+			Marshal.Copy(Encoding.UTF8.GetBytes(encodedString), 0, pointer, Encoding.UTF8.GetByteCount(encodedString));
+			return pointer;
         }
 
         private void UpdateDiscordPresence(PresenceModel game)
@@ -176,7 +177,6 @@ namespace PlayStationDiscord
 
 			var currentStatus = game.TitleName ?? CultureInfo.CurrentCulture.TextInfo.ToTitleCase(game.OnlineStatus);
 			var encoded = Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(currentStatus));
-			encoded += "\0\0"; // Null terminate for the pointer
 
 		    var detailsPointer = StringToPointer(encoded);
 
