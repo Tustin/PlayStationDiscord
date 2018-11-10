@@ -84,6 +84,7 @@
     <Compile Include="ExpiredRefreshTokenException.cs" />
     <Compile Include="FlurlProxy.cs" />
     <Compile Include="Game.cs" />
+    <Compile Include="GameInfo.cs" />
     <Compile Include="GitHubRelease.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="TokenHandler.cs" />
@@ -127,12 +128,13 @@
     <None Include="Resources\games.json" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
+    <None Include="App.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Resource Include="icon.ico" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy /Y "$(ProjectDir)discord-rpc.dll" "$(TargetDir)discord-rpc.dll"

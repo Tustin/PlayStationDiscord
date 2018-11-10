@@ -15,6 +15,7 @@ using PlayStationSharp.API;
 using PlayStationSharp.Model.ProfileJsonTypes;
 using PlayStationDiscord.Exceptions;
 using Newtonsoft.Json;
+using System.Windows.Media;
 
 namespace PlayStationDiscord
 {
@@ -202,16 +203,23 @@ namespace PlayStationDiscord
 			// Only set the timestamp if the user is playing a game. Pointless otherwise.
 			if (game.NpTitleId != null)
 			{
+				// Try to find the title id of a pre-set game using the titleId or use the game name
+				// Doing it this way now for other regions
+				var foundTitleId = (from g in CurrentConsole.Value.Games
+								   where g.TitleId.Equals(game.NpTitleId, StringComparison.OrdinalIgnoreCase)
+								   || g.Name.Equals(game.TitleName, StringComparison.OrdinalIgnoreCase)
+								   select g).FirstOrDefault();
+
 				// If the list of supported games contains the currently played game, lets use that custom icon.
-				if (CurrentConsole.Value.Games.Contains(game.NpTitleId, StringComparer.OrdinalIgnoreCase))
+				if (foundTitleId != default(GameInfo))
 				{
 					// Set the small image to the console being played.
 					smallImageKey = largeImageKey;
 					smallImageText = CurrentConsole.Value.Name;
 					// Discord automatically lowercases all assets when uploaded.
-					largeImageKey = game.NpTitleId.ToLower();
-
+					largeImageKey = foundTitleId.TitleId.ToLower();
 				}
+
 				// If the new game doesn't equal the last game, reset the time.
 				if (!game.NpTitleId.Equals(CurrentGame))
 				{
@@ -313,12 +321,20 @@ namespace PlayStationDiscord
 
 			lblWelcome.Content = this.PlayStationAccount.Profile.OnlineId;
 
-			var bitmap = new BitmapImage();
-			bitmap.BeginInit();
-			bitmap.UriSource = new Uri(this.PlayStationAccount.Profile.AvatarUrls[1].AvatarUrl, UriKind.Absolute);
-			bitmap.EndInit();
+			var avatars = this.PlayStationAccount.Profile.AvatarUrls;
 
-			imgAvatar.Source = bitmap;
+			// Set avatar if one exists.
+			if (avatars.Count > 0)
+			{
+				var biggest = avatars.Last().AvatarUrl;
+				var bitmap = new BitmapImage();
+
+				bitmap.BeginInit();
+				bitmap.UriSource = new Uri(biggest, UriKind.Absolute);
+				bitmap.EndInit();
+
+				imgAvatar.Source = bitmap;
+			}
 
 			SetControlState(true);
 
@@ -334,8 +350,7 @@ namespace PlayStationDiscord
 
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
 		{
-			StopDiscordControllers();
-			this.NotifyIcon.Visible = false;
+			HandleShutdown();
 		}
 
 		private void togEnableRP_PreviewMouseUp(object sender, MouseButtonEventArgs e)
@@ -357,8 +372,9 @@ namespace PlayStationDiscord
 
 				Instantiate(account);
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
+				Logger.Write(ex.ToString());
 				SetControlState(false);
 			}
 		}
@@ -384,7 +400,10 @@ namespace PlayStationDiscord
 			{
 				Icon = Properties.Resources.icon,
 				Visible = true,
-				Text = "Discord Rich Presence for PlayStation"
+				Text = "Discord Rich Presence for PlayStation",
+				ContextMenu = new ContextMenu(
+					new MenuItem[] { new MenuItem("Exit", notifyIcon_OnExit) }
+				)
 			};
 
 			this.NotifyIcon.DoubleClick += Icon_DoubleClick;
@@ -409,6 +428,18 @@ namespace PlayStationDiscord
 				StopDiscordControllers();
 				SetControlState(false);
 			}
+		}
+
+		private void notifyIcon_OnExit(object sender, EventArgs args)
+		{
+			HandleShutdown();
+			this.Close();
+		}
+
+		private void HandleShutdown()
+		{
+			StopDiscordControllers();
+			this.NotifyIcon.Visible = false;
 		}
 	}
 }

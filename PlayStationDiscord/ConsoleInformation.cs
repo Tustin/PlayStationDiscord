@@ -11,14 +11,14 @@ namespace PlayStationDiscord
 
 		public string ClientId { get; protected set; }
 
-		public List<string> Games { get; private set; } = new List<string>();
+		public List<GameInfo> Games { get; private set; } = new List<GameInfo>();
 
-		public ConsoleInformation(string name, string imageKey, string clientId, List<string> games)
+		public ConsoleInformation(string name, string imageKey, string clientId, List<GameInfo> games)
 		{
 			this.Name = name;
 			this.ImageKeyName = imageKey;
 			this.ClientId = clientId;
-			this.Games = games ?? new List<string>();
+			this.Games = games ?? new List<GameInfo>();
 		}
 	}
 }
