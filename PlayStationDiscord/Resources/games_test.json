@@ -288,15 +288,34 @@
             "titleId": "CUSA04723_00",
             "name": "Emily Wants To Play"
         },
-        "CUSA07022_00",
-        "CUSA11100_00",
-        "CUSA05969_00",
-        "CUSA02290_00",
-        "CUSA04762_00",
-        "CUSA03522_00",
-        "CUSA00803_00",
-        "CUSA00018_00",
-        "CUSA00552_00"
+        {
+            "titleId": "CUSA07022_00",
+            "name": "Fortnite Battle Royale "
+        },
+        {
+            "titleId": "CUSA05969_00",
+            "name": "Call of Duty®: WWII - Gold Edition"
+        },
+        {
+            "titleId": "CUSA02290_00",
+            "name": "Call of Duty: Black Ops III - Premium SHAREfactory™ Theme"
+        },
+        {
+            "titleId": "CUSA04762_00",
+            "name": "Call of Duty®: Infinite Warfare"
+        },
+        {
+            "titleId": "CUSA03522_00",
+            "name": "Call of Duty®: Modern Warfare® Remastered"
+        },
+        {
+            "titleId": "CUSA00803_00",
+            "name": "Call of Duty®: Advanced Warfare Gold Edition"
+        },
+        {
+            "titleId": "CUSA00018_00",
+            "name": "Call of Duty®: Ghosts Gold Edition"
+        }
     ],
     "vita": [
         {
