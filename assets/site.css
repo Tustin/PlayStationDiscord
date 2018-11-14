@@ -1,0 +1,38 @@
+body {
+    background-image: url('images/bg.png');
+    font-family: 'Montserrat', sans-serif;
+    line-height: 1;
+
+}
+
+h1, h3 {
+    color: #fff;
+    text-align: center;
+}
+
+.tagline {
+    font-size: 1.024rem;
+    font-weight: 600;
+    margin-bottom: 2.4rem;
+    opacity: 0.8; 
+}
+
+h3 {
+    font-weight: 400;
+}
+
+@font-face {
+    font-family: "Montserrat";
+    font-style: normal;
+    font-weight: normal;
+    src: url("https://s3.amazonaws.com/parsec-static/fonts/montserrat-regular.eot");
+    src: url("https://s3.amazonaws.com/parsec-static/fonts/montserrat-regular.eot#iefix") format("embedded-opentype"), url("https://s3.amazonaws.com/parsec-static/fonts/montserrat-regular.woff") format("woff"), url("https://s3.amazonaws.com/parsec-static/fonts/montserrat-regular.woff2") format("woff2"), url("https://s3.amazonaws.com/parsec-static/fonts/montserrat-regular.ttf") format("truetype"), url("https://s3.amazonaws.com/parsec-static/fonts/montserrat-regular.svg#montserrat-regular") format("svg"); 
+}
+  
+@font-face {
+    font-family: "Montserrat";
+    font-style: normal;
+    font-weight: normal;
+    src: url("https://s3.amazonaws.com/parsec-static/fonts/montserrat-semibold.eot");
+    src: url("https://s3.amazonaws.com/parsec-static/fonts/montserrat-semibold.eot#iefix") format("embedded-opentype"), url("https://s3.amazonaws.com/parsec-static/fonts/montserrat-semibold.woff") format("woff"), url("https://s3.amazonaws.com/parsec-static/fonts/montserrat-semibold.woff2") format("woff2"), url("https://s3.amazonaws.com/parsec-static/fonts/montserrat-semibold.ttf") format("truetype"), url("https://s3.amazonaws.com/parsec-static/fonts/montserrat-semibold.svg#montserrat-semibold") format("svg"); 
+}
