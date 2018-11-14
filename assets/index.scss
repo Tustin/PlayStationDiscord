@@ -1,0 +1,101 @@
+@import "theme";
+
+// Reset
+* {
+    margin: 0;
+    max-width: 100%;
+    font-family: $font-stack;
+}
+
+// Application
+body {
+    background: $whitespace-secondary url("../images/bg.png") no-repeat;
+    background-size: 100%;
+}
+
+// Main
+.landing {
+    margin-top: 50px;
+    text-align: center;
+
+    .title {
+        font-size: 36px;
+        font-weight: 700;
+        line-height: 44px;
+        color: #FFF;
+    }
+
+    .tagline {
+        font-size: 16px;
+        font-weight: 400;
+        line-height: 24px;
+        margin: 12px 0 24px;
+        color: $text-secondary;
+    }
+
+    .download-button {
+        height: 45px;
+        cursor: pointer;
+        border: none;
+        border-radius: 3px;
+        font-size: 15px;
+        line-height: 45px;
+        background-color: $blurple;
+        color: #FFF;
+        transition: all .35s cubic-bezier(.25,.25,.315,1.35);
+        box-shadow: rgba(0, 0, 0, .25) 0px 2px 6px 0px;
+    }
+
+    .download-button:hover {
+        background-color: $blurple-hover;
+        box-shadow: rgba(0, 0, 0, .5) 0px 2px 6px 0px;
+    }
+
+    .social {
+        margin-top: 25px;
+        padding: 10px;
+        display: flex;
+        justify-content: center;
+
+        .icon {
+            height: 25px;
+            width: auto;
+            padding: 0 10px;
+            cursor: pointer;
+            opacity: .8;
+            transition: all .35s cubic-bezier(.25,.25,.315,1.35);
+        }
+
+        .icon:hover {
+            opacity: 1;
+        }
+    }
+}
+
+.showcase {
+    display: grid;
+    grid-template-columns: 3;
+    padding-top: 25px;
+
+    .platform-title {
+        text-align: center;
+        color: $text-primary;
+    }
+
+    .playstation-3 {
+        grid-column: 1;
+    }
+
+    .playstation-4 {
+        grid-column: 2;
+    }
+
+    .playstation-vita {
+        grid-column: 3;
+    }
+}
+
+// Footer
+.footer-image {
+    margin-bottom: 0;
+}
