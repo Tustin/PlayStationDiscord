@@ -11,12 +11,16 @@
 body {
     background: $whitespace-secondary url("../images/bg.png") no-repeat;
     background-size: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
-
+ 
 // Main
 .landing {
     margin-top: 50px;
     text-align: center;
+    flex: 1;
 
     .title {
         font-size: 36px;
@@ -76,10 +80,17 @@ body {
     display: grid;
     grid-template-columns: 3;
     padding-top: 25px;
+    flex: 2;
 
     .platform-title {
         text-align: center;
         color: $text-primary;
+        margin-top: 5px;
+    }
+    
+    img {
+        display: block;
+        margin: 0 auto;
     }
 
     .playstation-3 {
@@ -98,4 +109,16 @@ body {
 // Footer
 .footer-image {
     margin-bottom: 0;
+}
+
+footer {
+    .credit {
+        text-align: center;
+        color: $text-secondary;
+
+        a {
+            color: $text-primary;
+        }
+    }
+    margin-bottom: 5px;
 }
