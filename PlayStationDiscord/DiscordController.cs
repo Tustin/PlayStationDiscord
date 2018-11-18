@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PlayStationDiscord
 {
 	internal class DiscordController
 	{
-		public DiscordRPC.RichPresence presence;
+		public static DiscordRPC.RichPresence presence;
 		DiscordRPC.EventHandlers handlers;
 
 		public static string PS4ApplicationId	= "457775893746810880";
@@ -39,17 +40,32 @@ namespace PlayStationDiscord
 
 		public void ReadyCallback()
 		{
+			var ff = "aa";
 			Console.WriteLine("Discord RPC is ready!");
 		}
 
 		public void DisconnectedCallback(int errorCode, string message)
 		{
+			var ff = errorCode;
 			Console.WriteLine($"Error: {errorCode} - {message}");
 		}
 
 		public void ErrorCallback(int errorCode, string message)
 		{
+			var aa = errorCode;
 			Console.WriteLine($"Error: {errorCode} - {message}");
+		}
+
+		private static async Task RunCallbacks()
+		{
+			await Task.Run(() =>
+			{
+				while (true)
+				{
+					//presence.RunCallbacks();
+					Thread.Sleep(1000);
+				}
+			});
 		}
 	}
 }

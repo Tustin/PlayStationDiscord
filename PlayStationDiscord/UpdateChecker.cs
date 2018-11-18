@@ -1,10 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics;
+using System.IO;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using Flurl.Http;
+using PlayStationDiscord.Models;
 
 namespace PlayStationDiscord
 {
@@ -14,6 +13,8 @@ namespace PlayStationDiscord
 
 		public static string Changelog => _model.Body;
 		public static string Url => _model.HtmlUrl;
+		public static string DownloadUrl => _model.Assets[0].BrowserDownloadUrl;
+		public static string FileName => _model.Assets[0].Name;
 
 		public static bool Latest
 		{
@@ -28,12 +29,29 @@ namespace PlayStationDiscord
 
 					return currentVersion.Equals(_model.TagName, StringComparison.CurrentCultureIgnoreCase);
 				}
-				catch (Exception) 
+				catch (Exception ex) 
 				{
+					Logger.Write($"Failed to download update: {ex.ToString()}");
 					// If we can't get the latest version for some reason, just ignore.
 					return true;
 				}
+			}
+		}
 
+		public static void TryToInstall()
+		{
+			var newFile = Path.GetTempPath() + FileName;
+
+			if (File.Exists(newFile))
+			{
+				File.Delete(newFile);
+			}
+
+			var file = DownloadUrl.DownloadFileAsync(Path.GetTempPath()).Result;
+
+			if (file != default(string))
+			{
+				Process.Start(file);
 			}
 		}
 	}

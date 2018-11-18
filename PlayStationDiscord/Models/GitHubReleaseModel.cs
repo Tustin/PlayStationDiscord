@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace PlayStationDiscord
+namespace PlayStationDiscord.Models
 {
 	public class Author
 	{

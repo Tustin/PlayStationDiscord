@@ -16,6 +16,8 @@ using PlayStationSharp.Model.ProfileJsonTypes;
 using PlayStationDiscord.Exceptions;
 using Newtonsoft.Json;
 using System.Windows.Media;
+using Flurl.Http;
+using System.IO;
 
 namespace PlayStationDiscord
 {
@@ -51,9 +53,9 @@ namespace PlayStationDiscord
 		{
 			switch (console.Platform)
 			{
-				case "PS3": 
+				case "PS3":
 					return SupportedConsoles.First(a => a.Key == DiscordApplicationId.PS3);
-				case "PSVITA": 
+				case "PSVITA":
 					return SupportedConsoles.First(a => a.Key == DiscordApplicationId.Vita);
 				case "ps4":
 				default:
@@ -102,6 +104,7 @@ namespace PlayStationDiscord
 					{
 						// If we get here, it means both the access token and refresh tokens have expired
 						// Might not be necessary but better to have it than not
+						Logger.Write("Both OAuth tokens expired.");
 						StopDiscordControllers();
 						break;
 					}
@@ -117,7 +120,7 @@ namespace PlayStationDiscord
 		{
 			while (!cts.IsCancellationRequested)
 			{
-				var game = FetchGame();
+				var game = FetchCurrentGame();
 
 				if (game.Platform != null)
 				{
@@ -146,31 +149,27 @@ namespace PlayStationDiscord
 			}
 		}
 
-	    // Hack - This is a mess
-	    // So apparently, either something with `ref` in C# OR something with Discord messes up Unicode literals
-	    // To fix this, instead of passing a string to the struct and sending that over to RPC, we need to make a pointer to it
-	    // Dirty, but fixes the Unicode characters.
-	    // https://github.com/discordapp/discord-rpc/issues/119#issuecomment-363916563
-
-	    // TODO - Figure out why the pointer will point to junk memory after toggling the enable switch after some time (1 hour+)
-	    // Also, now that PS3 is supported, we should probably trim the game name/status
-	    // Since you can mod the PARAM.SFO for a game and give it a fake name, could cause an overflow issue with Discord
-        private static IntPtr StringToPointer(string encodedString)
-        {
+		// Hack - This is a mess
+		// So apparently, either something with `ref` in C# OR something with Discord messes up Unicode literals
+		// To fix this, instead of passing a string to the struct and sending that over to RPC, we need to make a pointer to it
+		// Dirty, but fixes the Unicode characters.
+		// https://github.com/discordapp/discord-rpc/issues/119#issuecomment-363916563
+		private static IntPtr StringToPointer(string encodedString)
+		{
 			encodedString += "\0\0";
 			var pointer = Marshal.AllocCoTaskMem(Encoding.UTF8.GetByteCount(encodedString));
 			Marshal.Copy(Encoding.UTF8.GetBytes(encodedString), 0, pointer, Encoding.UTF8.GetByteCount(encodedString));
 			return pointer;
-        }
+		}
 
-        private void UpdateDiscordPresence(PresenceModel game)
+		private void UpdateDiscordPresence(PresenceModel game)
 		{
 			var console = GetConsoleFromApplicationId(game);
 
 			// If the current console doesn't equal the latest game's console, update it and restart.
 			if (CurrentConsole.Key != console.Key)
 			{
-				Logger.Write($"Detected console switch: old = {CurrentConsole.Value.Name}, new = {console.Value.Name}");
+				//Logger.Write($"Detected console switch: old = {CurrentConsole.Value.Name}, new = {console.Value.Name}");
 				CurrentConsole = SupportedConsoles.FirstOrDefault(a => a.Key == console.Key);
 				RestartDiscordControllers();
 				return;
@@ -179,20 +178,19 @@ namespace PlayStationDiscord
 			var currentStatus = game.TitleName ?? CultureInfo.CurrentCulture.TextInfo.ToTitleCase(game.OnlineStatus);
 			var encoded = Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(currentStatus));
 
-		    var detailsPointer = StringToPointer(encoded);
+			// Put any future pointers here for consistency.
+			var detailsPointer = StringToPointer(encoded);
+			var gameStatusPointer = StringToPointer(game.GameStatus ?? "");
 
-		    var gameStatusPointer = StringToPointer(game.GameStatus ?? "");
-
-
-            DiscordController.presence = new DiscordRPC.RichPresence
+			DiscordController.presence = new DiscordRPC.RichPresence
 			{
 				details = detailsPointer
-            };
+			};
 
 			// Update game status (if applicable).
 			if (game.GameStatus != null)
 			{
-                DiscordController.presence.state = gameStatusPointer;
+				DiscordController.presence.state = gameStatusPointer;
 			}
 
 			string largeImageKey = CurrentConsole.Value.ImageKeyName;
@@ -200,24 +198,23 @@ namespace PlayStationDiscord
 			string smallImageKey = default(string);
 			string smallImageText = default(string);
 
-			// Only set the timestamp if the user is playing a game. Pointless otherwise.
 			if (game.NpTitleId != null)
 			{
-				// Try to find the title id of a pre-set game using the titleId or use the game name
-				// Doing it this way now for other regions
-				var foundTitleId = (from g in CurrentConsole.Value.Games
-								   where g.TitleId.Equals(game.NpTitleId, StringComparison.OrdinalIgnoreCase)
-								   || g.Name.Equals(game.TitleName, StringComparison.OrdinalIgnoreCase)
-								   select g).FirstOrDefault();
+				// Try to find the title id of a pre-set game using the titleId or use the game name.
+				// Doing it this way now for other regions.
+				var foundGameInfo = (from g in CurrentConsole.Value.Games
+									 where g.TitleId.Equals(game.NpTitleId, StringComparison.OrdinalIgnoreCase)
+									 || g.Name.Equals(game.TitleName, StringComparison.OrdinalIgnoreCase)
+									 select g).FirstOrDefault();
 
 				// If the list of supported games contains the currently played game, lets use that custom icon.
-				if (foundTitleId != default(GameInfo))
+				if (foundGameInfo != default(GameInfo))
 				{
 					// Set the small image to the console being played.
 					smallImageKey = largeImageKey;
 					smallImageText = CurrentConsole.Value.Name;
 					// Discord automatically lowercases all assets when uploaded.
-					largeImageKey = foundTitleId.TitleId.ToLower();
+					largeImageKey = foundGameInfo.TitleId.ToLower();
 				}
 
 				// If the new game doesn't equal the last game, reset the time.
@@ -247,6 +244,7 @@ namespace PlayStationDiscord
 			lblCurrentlyPlaying.Dispatcher.Invoke(new UpdateStatusControlsCallback(UpdateStatusControls),
 				new object[] { currentStatus });
 
+			// Free the pointers.
 			Marshal.FreeCoTaskMem(detailsPointer);
 			Marshal.FreeCoTaskMem(gameStatusPointer);
 		}
@@ -284,7 +282,7 @@ namespace PlayStationDiscord
 
 		}
 
-		private PresenceModel FetchGame()
+		private PresenceModel FetchCurrentGame()
 		{
 			var presences = PlayStationAccount.GetInfo().Information.Presences;
 
@@ -301,21 +299,30 @@ namespace PlayStationDiscord
 
 		private void Button_Click(object sender, RoutedEventArgs e)
 		{
-			var account = Auth.CreateLogin();
+			try
+			{
+				var account = Auth.CreateLogin();
 
-			// Login form was closed by the user.
-			if (account == null) return;
+				// Login form was closed by the user.
+				if (account == null) return;
 
-			Instantiate(account);
+				Instantiate(account);
+			}
+			catch (FileNotFoundException ex)
+			{
+				Logger.Write($"Failed to spawn login form: {ex.ToString()}");
+				System.Windows.MessageBox.Show("An error has occurred while attempting to create login form. Please try to install the application again. If the problem persists, please open an issue on the GitHub repo.", "PlayStation", MessageBoxButton.OK, MessageBoxImage.Error);
+			}
+
 		}
 
 		private void Instantiate(Account account)
 		{
 			this.PlayStationAccount = account;
 
-			var game = FetchGame();
+			var game = FetchCurrentGame();
 
-			Logger.Write($"Game = {JsonConvert.SerializeObject(game)}");
+			//Logger.Write($"Game = {JsonConvert.SerializeObject(game)}");
 
 			this.CurrentConsole = GetConsoleFromApplicationId(game);
 
@@ -383,16 +390,33 @@ namespace PlayStationDiscord
 		{
 			if (!UpdateChecker.Latest)
 			{
-				if (System.Windows.Forms.MessageBox.Show($"A new version has been released.\n\n{UpdateChecker.Changelog}\n\nGo to download page?", "PlayStationDiscord Update", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) == System.Windows.Forms.DialogResult.Yes)
+				if (System.Windows.Forms.MessageBox.Show($"A new version has been released.\n\n{UpdateChecker.Changelog}\n\nWould you like to install?", "PlayStationDiscord Update", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) == System.Windows.Forms.DialogResult.Yes)
 				{
-					Process.Start(UpdateChecker.Url);
-					this.Close();
+					try
+					{
+						UpdateChecker.TryToInstall();
+						this.Close();
+					}
+					catch (Exception ex)
+					{
+						Logger.Write($"Failed to automatically install update: {ex.ToString()}");
+
+						if (System.Windows.Forms.MessageBox.Show("Unable to automatically install update. Would you like to go to the download page?", "PlayStationDiscord Update", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) == System.Windows.Forms.DialogResult.Yes)
+						{
+							Process.Start(UpdateChecker.Url);
+							this.Close();
+						}
+					}
 				}
 			}
 
 			InitializeComponent();
 
-			//FlurlHttp.Configure(settings => {
+			// Instantiate the config file.
+			Config.Init();
+
+			//FlurlHttp.Configure(settings =>
+			//{
 			//	settings.HttpClientFactory = new ProxyHttpClientFactory("http://localhost:8888");
 			//});
 
@@ -427,6 +451,7 @@ namespace PlayStationDiscord
 			{
 				StopDiscordControllers();
 				SetControlState(false);
+				TokenHandler.Delete();
 			}
 		}
 
@@ -440,6 +465,7 @@ namespace PlayStationDiscord
 		{
 			StopDiscordControllers();
 			this.NotifyIcon.Visible = false;
+			this.NotifyIcon.Icon = null;
 		}
 	}
 }

@@ -9,9 +9,7 @@ namespace PlayStationDiscord
 {
 	class Logger
 	{
-		private static string ApplicationDataDirectory => Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/PlayStationDiscord";
-
-		private static string LogFile => ApplicationDataDirectory + "/log.txt";
+		private static string LogFile => Config.ApplicationDataDirectory + "/log.txt";
 
 		private static readonly object Mutex = new object();
 

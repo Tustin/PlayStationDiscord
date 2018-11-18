@@ -76,17 +76,20 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Config.cs" />
+    <Compile Include="Models\ConfigModel.cs" />
     <Compile Include="ConsoleInformation.cs" />
     <Compile Include="DiscordApplicationId.cs" />
     <Compile Include="DiscordController.cs" />
     <Compile Include="DiscordRPC.cs" />
-    <Compile Include="ExpiredAccessTokenException.cs" />
-    <Compile Include="ExpiredRefreshTokenException.cs" />
+    <Compile Include="Exceptions\ExpiredAccessTokenException.cs" />
+    <Compile Include="Exceptions\ExpiredRefreshTokenException.cs" />
     <Compile Include="FlurlProxy.cs" />
     <Compile Include="Game.cs" />
     <Compile Include="GameInfo.cs" />
-    <Compile Include="GitHubRelease.cs" />
+    <Compile Include="Models\GitHubReleaseModel.cs" />
     <Compile Include="Logger.cs" />
+    <Compile Include="Models\SupportedGamesModel.cs" />
     <Compile Include="TokenHandler.cs" />
     <Compile Include="UpdateChecker.cs" />
     <Page Include="MainWindow.xaml">

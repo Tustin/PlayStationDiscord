@@ -33,6 +33,9 @@ namespace PlayStationDiscord
 		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 		public delegate void ErrorCallback(int errorCode, string message);
 
+		[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+		private delegate void RunCallbacksDel();
+
 		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 		public delegate void JoinCallback(string secret);
 
