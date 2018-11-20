@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Net;
 using System.Threading.Tasks;
 using Flurl.Http;
 using Newtonsoft.Json;
@@ -7,11 +8,11 @@ using PlayStationDiscord.Models;
 
 namespace PlayStationDiscord
 {
-	static class Game
+	static class SupportedGames
 	{
 		private static string CachedGamesFile => Config.ApplicationDataDirectory + "/games.cached.json";
 
-#if __DEBUG
+#if DEBUG
 		private static string GamesFileUrl => "https://raw.githubusercontent.com/Tustin/PlayStationDiscord/master/PlayStationDiscord/Resources/games_test.json";
 #else
 		private static string GamesFileUrl => "https://raw.githubusercontent.com/Tustin/PlayStationDiscord/master/PlayStationDiscord/Resources/games.json";
@@ -20,10 +21,12 @@ namespace PlayStationDiscord
 		/// <summary>
 		/// Fetches the list of supported games from the repo.
 		/// 
+		/// Will fallback to %appdata%\PlayStationDiscord\games.cached.json if the file on GitHub hasn't changed.
+		/// 
 		/// This is used to get all the games which have a custom icon asset saved in the Discord application.
 		/// 
 		/// </summary>
-		/// <returns>The list of game SKUs.</returns>
+		/// <returns>List of supported games.</returns>
 		public static async Task<SupportedGamesModel> FetchGames()
 		{
 			try
@@ -65,7 +68,7 @@ namespace PlayStationDiscord
 				{
 					var code = ex.Call.Response.StatusCode;
 
-					if (code == System.Net.HttpStatusCode.NotModified)
+					if (code == HttpStatusCode.NotModified)
 					{
 						try
 						{
@@ -94,6 +97,7 @@ namespace PlayStationDiscord
 				Logger.Write($"Failed to fetch games from external source: {ex.ToString()}");
 			}
 
+			// If anything fails, just fallback to an empty set of games so the program still functions.
 			return new SupportedGamesModel();
 		}
 	}

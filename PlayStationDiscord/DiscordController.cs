@@ -4,68 +4,63 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using static DiscordRpc;
 
 namespace PlayStationDiscord
 {
 	internal class DiscordController
 	{
-		public static DiscordRPC.RichPresence presence;
-		DiscordRPC.EventHandlers handlers;
+		public static RichPresence presence;
+		private static EventHandlers handlers;
+		private static CancellationTokenSource CallbacksCts = new CancellationTokenSource();
 
-		public static string PS4ApplicationId	= "457775893746810880";
-		public static string PS3ApplicationId	= "459823182044725269";
+		// Application IDs for each supported platform.
+		public static string PS4ApplicationId = "457775893746810880";
+		public static string PS3ApplicationId = "459823182044725269";
 		public static string VitaApplicationId = "493957159323828259";
 
 		public bool Running { get; set; }
 
-		/// <summary>
-		///     Initializes Discord RPC
-		/// </summary>
-
 		public void Initialize(KeyValuePair<DiscordApplicationId, ConsoleInformation> application)
 		{
-			handlers = new DiscordRPC.EventHandlers();
-			handlers.readyCallback = ReadyCallback;
+			handlers = new EventHandlers();
+			handlers.readyCallback += ReadyCallback;
 			handlers.disconnectedCallback += DisconnectedCallback;
 			handlers.errorCallback += ErrorCallback;
-			DiscordRPC.Initialize(application.Value.ClientId, ref handlers, true, default(string));
+			DiscordRpc.Initialize(application.Value.ClientId, ref handlers, true, default(string));
+			CallbacksCts = new CancellationTokenSource();
+			Task.Run(RunCallbacksController);
 			this.Running = true;
 		}
 
 		public void Stop()
 		{
-			DiscordRPC.Shutdown();
+			DiscordRpc.Shutdown();
+			CallbacksCts.Cancel();
 			this.Running = false;
 		}
 
 		public void ReadyCallback()
 		{
-			var ff = "aa";
-			Console.WriteLine("Discord RPC is ready!");
 		}
 
 		public void DisconnectedCallback(int errorCode, string message)
 		{
-			var ff = errorCode;
-			Console.WriteLine($"Error: {errorCode} - {message}");
+			Logger.Write($"Disconnect callback fired: {errorCode} - {message}");
 		}
 
 		public void ErrorCallback(int errorCode, string message)
 		{
-			var aa = errorCode;
-			Console.WriteLine($"Error: {errorCode} - {message}");
+			Logger.Write($"Error callback fired: {errorCode} - {message}");
 		}
 
-		private static async Task RunCallbacks()
+		private static async Task RunCallbacksController()
 		{
-			await Task.Run(() =>
+			while (!CallbacksCts.IsCancellationRequested)
 			{
-				while (true)
-				{
-					//presence.RunCallbacks();
-					Thread.Sleep(1000);
-				}
-			});
+				DiscordRpc.RunCallbacks();
+				Thread.Sleep(1000);
+			}
 		}
 	}
 }

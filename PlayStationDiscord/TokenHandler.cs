@@ -12,6 +12,10 @@ namespace PlayStationDiscord
 	{
 		private static string TokensFile => Config.ApplicationDataDirectory + "/tokens.dat";
 
+		/// <summary>
+		/// Write PSN OAuth tokens to <see cref="TokensFile"/>.
+		/// </summary>
+		/// <param name="tokens"></param>
 		public static void Write(OAuthTokens tokens)
 		{
 			var savedTokens = $"{tokens.Authorization}:{tokens.Refresh}";
@@ -24,6 +28,9 @@ namespace PlayStationDiscord
 			File.WriteAllText(TokensFile, stored);
 		}
 
+		/// <summary>
+		/// Deletes <see cref="TokensFile"/>.
+		/// </summary>
 		public static void Delete()
 		{
 			if (!File.Exists(TokensFile))
@@ -45,6 +52,10 @@ namespace PlayStationDiscord
 			}
 		}
 
+		/// <summary>
+		/// Checks <see cref="TokensFile"/> and decrypts the OAuth tokens to login to PSN.
+		/// </summary>
+		/// <returns></returns>
 		public static Account Check()
 		{
 			if (!File.Exists(TokensFile))

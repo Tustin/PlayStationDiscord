@@ -85,7 +85,7 @@
     <Compile Include="Exceptions\ExpiredAccessTokenException.cs" />
     <Compile Include="Exceptions\ExpiredRefreshTokenException.cs" />
     <Compile Include="FlurlProxy.cs" />
-    <Compile Include="Game.cs" />
+    <Compile Include="SupportedGames.cs" />
     <Compile Include="GameInfo.cs" />
     <Compile Include="Models\GitHubReleaseModel.cs" />
     <Compile Include="Logger.cs" />

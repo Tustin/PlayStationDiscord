@@ -13,6 +13,10 @@ namespace PlayStationDiscord
 
 		private static readonly object Mutex = new object();
 
+		/// <summary>
+		/// Acquires a lock on <see cref="LogFile"/> and writes <paramref name="line"/>.
+		/// </summary>
+		/// <param name="line">String to log.</param>
 		public static void Write(string line)
 		{
 			lock (Mutex)

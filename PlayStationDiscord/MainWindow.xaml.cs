@@ -149,19 +149,6 @@ namespace PlayStationDiscord
 			}
 		}
 
-		// Hack - This is a mess
-		// So apparently, either something with `ref` in C# OR something with Discord messes up Unicode literals
-		// To fix this, instead of passing a string to the struct and sending that over to RPC, we need to make a pointer to it
-		// Dirty, but fixes the Unicode characters.
-		// https://github.com/discordapp/discord-rpc/issues/119#issuecomment-363916563
-		private static IntPtr StringToPointer(string encodedString)
-		{
-			encodedString += "\0\0";
-			var pointer = Marshal.AllocCoTaskMem(Encoding.UTF8.GetByteCount(encodedString));
-			Marshal.Copy(Encoding.UTF8.GetBytes(encodedString), 0, pointer, Encoding.UTF8.GetByteCount(encodedString));
-			return pointer;
-		}
-
 		private void UpdateDiscordPresence(PresenceModel game)
 		{
 			var console = GetConsoleFromApplicationId(game);
@@ -176,21 +163,20 @@ namespace PlayStationDiscord
 			}
 
 			var currentStatus = game.TitleName ?? CultureInfo.CurrentCulture.TextInfo.ToTitleCase(game.OnlineStatus);
-			var encoded = Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(currentStatus));
+			//var encoded = Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(currentStatus));
 
 			// Put any future pointers here for consistency.
-			var detailsPointer = StringToPointer(encoded);
-			var gameStatusPointer = StringToPointer(game.GameStatus ?? "");
+			//var detailsPointer = StringToPointer(encoded);
 
-			DiscordController.presence = new DiscordRPC.RichPresence
+			DiscordController.presence = new DiscordRpc.RichPresence
 			{
-				details = detailsPointer
+				details = currentStatus
 			};
 
 			// Update game status (if applicable).
 			if (game.GameStatus != null)
 			{
-				DiscordController.presence.state = gameStatusPointer;
+				DiscordController.presence.state = game.GameStatus;
 			}
 
 			string largeImageKey = CurrentConsole.Value.ImageKeyName;
@@ -231,22 +217,16 @@ namespace PlayStationDiscord
 			}
 
 			DiscordController.presence.largeImageKey = largeImageKey;
-			DiscordController.presence.largeImageText = detailsPointer;
+			DiscordController.presence.largeImageText = currentStatus;
 			DiscordController.presence.smallImageKey = smallImageKey;
-			// This should be fine to keep as a string for now (the smallImageText field in DiscordController), 
-			// but if for some reason there is ever unicode characters in the string, it'll need to be changed to a pointer.
 			DiscordController.presence.smallImageText = smallImageText;
 
 			// Send the presence over to Discord.
-			DiscordRPC.UpdatePresence(ref DiscordController.presence);
+			DiscordRpc.UpdatePresence(DiscordController.presence);
 
 			// Update the stuff on the form.
 			lblCurrentlyPlaying.Dispatcher.Invoke(new UpdateStatusControlsCallback(UpdateStatusControls),
 				new object[] { currentStatus });
-
-			// Free the pointers.
-			Marshal.FreeCoTaskMem(detailsPointer);
-			Marshal.FreeCoTaskMem(gameStatusPointer);
 		}
 
 		private void UpdateStatusControls(string currentGame)
@@ -433,7 +413,7 @@ namespace PlayStationDiscord
 			this.NotifyIcon.DoubleClick += Icon_DoubleClick;
 
 			// Run our task to grab the supported game SKUs from the repo.
-			var games = Task.Run(Game.FetchGames).Result;
+			var games = Task.Run(SupportedGames.FetchGames).Result;
 
 			this.SupportedConsoles = new Dictionary<DiscordApplicationId, ConsoleInformation>()
 			{
