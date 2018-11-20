@@ -76,6 +76,15 @@ body {
     }
 }
 
+.carousel-caption {
+    bottom: 0px !important;
+    padding: 0;
+
+    h3 {
+        background-color: rgba(0, 0, 0, 0.3);
+    }
+}
+
 .showcase {
     display: grid;
     grid-template-columns: 3;
