@@ -23,13 +23,17 @@ namespace PlayStationDiscord
 				try
 				{
 					var currentVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+
 					_model = "https://api.github.com/repos/Tustin/PlayStationDiscord/releases/latest"
 						.WithHeader("User-Agent", "PlayStationDiscord")
 						.GetJsonAsync<GitHubReleaseModel>().Result;
-
+#if !DEBUG
+					return currentVersion.Equals(_model.TagName, StringComparison.CurrentCultureIgnoreCase) && !_model.Prerelease;
+#else
 					return currentVersion.Equals(_model.TagName, StringComparison.CurrentCultureIgnoreCase);
+#endif
 				}
-				catch (Exception ex) 
+				catch (Exception ex)
 				{
 					Logger.Write($"Failed to download update: {ex.ToString()}");
 					// If we can't get the latest version for some reason, just ignore.
@@ -38,6 +42,9 @@ namespace PlayStationDiscord
 			}
 		}
 
+		/// <summary>
+		/// Tries to download and execute the latest installer from GitHub.
+		/// </summary>
 		public static void TryToInstall()
 		{
 			var newFile = Path.GetTempPath() + FileName;

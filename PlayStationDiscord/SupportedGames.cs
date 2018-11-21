@@ -21,7 +21,7 @@ namespace PlayStationDiscord
 		/// <summary>
 		/// Fetches the list of supported games from the repo.
 		/// 
-		/// Will fallback to %appdata%\PlayStationDiscord\games.cached.json if the file on GitHub hasn't changed.
+		/// Will fallback to <see cref="CachedGamesFile"/> if the file on GitHub hasn't changed.
 		/// 
 		/// This is used to get all the games which have a custom icon asset saved in the Discord application.
 		/// 

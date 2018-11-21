@@ -141,6 +141,7 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy /Y "$(ProjectDir)discord-rpc.dll" "$(TargetDir)discord-rpc.dll"
-copy /Y "$(ProjectDir)PlayStationSharp.dll" "$(TargetDir)PlayStationSharp.dll"</PostBuildEvent>
+copy /Y "$(ProjectDir)PlayStationSharp.dll" "$(TargetDir)PlayStationSharp.dll"
+copy /Y "$(ProjectDir)Microsoft.Toolkit.Win32.UI.Controls.dll" "$(TargetDir)Microsoft.Toolkit.Win32.UI.Controls.dll"</PostBuildEvent>
   </PropertyGroup>
 </Project>

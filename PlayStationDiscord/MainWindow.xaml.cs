@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
 using System.Windows.Media.Imaging;
@@ -14,9 +12,6 @@ using System.Diagnostics;
 using PlayStationSharp.API;
 using PlayStationSharp.Model.ProfileJsonTypes;
 using PlayStationDiscord.Exceptions;
-using Newtonsoft.Json;
-using System.Windows.Media;
-using Flurl.Http;
 using System.IO;
 
 namespace PlayStationDiscord
@@ -87,7 +82,11 @@ namespace PlayStationDiscord
 			StartDiscordControllers();
 		}
 
-		private async Task TokenRefreshTask(CancellationToken cts)
+		/// <summary>
+		/// Task that only runs when the access token is about to expire.
+		/// </summary>
+		/// <param name="cts">CancellationToken</param>
+		private async void TokenRefreshTask(CancellationToken cts)
 		{
 			while (!cts.IsCancellationRequested)
 			{
@@ -116,7 +115,11 @@ namespace PlayStationDiscord
 			}
 		}
 
-		private async Task UpdateTask(CancellationToken cts)
+		/// <summary>
+		/// Task which updates Discord Rich Presence every 30 seconds.
+		/// </summary>
+		/// <param name="cts">CancellationToken</param>
+		private async void UpdateTask(CancellationToken cts)
 		{
 			while (!cts.IsCancellationRequested)
 			{
@@ -149,6 +152,10 @@ namespace PlayStationDiscord
 			}
 		}
 
+		/// <summary>
+		/// Updates Discord rich presence.
+		/// </summary>
+		/// <param name="game">Game information.</param>
 		private void UpdateDiscordPresence(PresenceModel game)
 		{
 			var console = GetConsoleFromApplicationId(game);
@@ -156,17 +163,12 @@ namespace PlayStationDiscord
 			// If the current console doesn't equal the latest game's console, update it and restart.
 			if (CurrentConsole.Key != console.Key)
 			{
-				//Logger.Write($"Detected console switch: old = {CurrentConsole.Value.Name}, new = {console.Value.Name}");
 				CurrentConsole = SupportedConsoles.FirstOrDefault(a => a.Key == console.Key);
 				RestartDiscordControllers();
 				return;
 			}
 
 			var currentStatus = game.TitleName ?? CultureInfo.CurrentCulture.TextInfo.ToTitleCase(game.OnlineStatus);
-			//var encoded = Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(currentStatus));
-
-			// Put any future pointers here for consistency.
-			//var detailsPointer = StringToPointer(encoded);
 
 			DiscordController.presence = new DiscordRpc.RichPresence
 			{
@@ -180,6 +182,7 @@ namespace PlayStationDiscord
 			}
 
 			string largeImageKey = CurrentConsole.Value.ImageKeyName;
+
 			// These will only be used if the user is playing a supported game.
 			string smallImageKey = default(string);
 			string smallImageText = default(string);
@@ -286,7 +289,7 @@ namespace PlayStationDiscord
 				// Login form was closed by the user.
 				if (account == null) return;
 
-				Instantiate(account);
+				FinalizeLoginFlow(account);
 			}
 			catch (FileNotFoundException ex)
 			{
@@ -296,13 +299,15 @@ namespace PlayStationDiscord
 
 		}
 
-		private void Instantiate(Account account)
+		/// <summary>
+		/// Sets up form properties, grabs information and starts up tasks.
+		/// </summary>
+		/// <param name="account">PlayStation account.</param>
+		private void FinalizeLoginFlow(Account account)
 		{
 			this.PlayStationAccount = account;
 
 			var game = FetchCurrentGame();
-
-			//Logger.Write($"Game = {JsonConvert.SerializeObject(game)}");
 
 			this.CurrentConsole = GetConsoleFromApplicationId(game);
 
@@ -332,7 +337,7 @@ namespace PlayStationDiscord
 		{
 			if (PlayStationAccount == null) return;
 
-			LoadComponents();
+			TryAutomaticLogin();
 		}
 
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -351,17 +356,25 @@ namespace PlayStationDiscord
 			if (WindowState == WindowState.Minimized) this.Hide();
 		}
 
-		private void LoadComponents()
+		/// <summary>
+		/// Tries to login with tokens from <see cref="TokenHandler.TokensFile"/>.
+		/// </summary>
+		private void TryAutomaticLogin()
 		{
 			try
 			{
 				var account = TokenHandler.Check();
 
-				Instantiate(account);
+				FinalizeLoginFlow(account);
 			}
 			catch (Exception ex)
 			{
-				Logger.Write(ex.ToString());
+				// Log exception only if the file was found.
+				if (!(ex is FileNotFoundException))
+				{
+					Logger.Write($"Error when logging in with tokens: {ex.ToString()}");
+				}
+
 				SetControlState(false);
 			}
 		}
@@ -390,6 +403,7 @@ namespace PlayStationDiscord
 				}
 			}
 
+			// Create form.
 			InitializeComponent();
 
 			// Instantiate the config file.
@@ -412,9 +426,9 @@ namespace PlayStationDiscord
 
 			this.NotifyIcon.DoubleClick += Icon_DoubleClick;
 
-			// Run our task to grab the supported game SKUs from the repo.
 			var games = Task.Run(SupportedGames.FetchGames).Result;
 
+			// Put this here so we can give it the list of all the games.
 			this.SupportedConsoles = new Dictionary<DiscordApplicationId, ConsoleInformation>()
 			{
 				{ DiscordApplicationId.PS4, new ConsoleInformation("PlayStation 4", "ps4_main", DiscordController.PS4ApplicationId, games.FirstOrDefault(a => a.Key == "ps4").Value) },
@@ -422,7 +436,7 @@ namespace PlayStationDiscord
 				{ DiscordApplicationId.Vita, new ConsoleInformation("PlayStation Vita", "vita_main", DiscordController.VitaApplicationId, games.FirstOrDefault(a => a.Key == "vita").Value) }
 			};
 
-			LoadComponents();
+			TryAutomaticLogin();
 		}
 
 		private void btnSignOut_Click(object sender, RoutedEventArgs e)
