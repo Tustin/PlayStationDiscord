@@ -29,19 +29,20 @@ namespace PlayStationDiscord
 			handlers.errorCallback += ErrorCallback;
 			DiscordRpc.Initialize(application.Value.ClientId, ref handlers, true, default(string));
 			CallbacksCts = new CancellationTokenSource();
-			Task.Run(RunCallbacksController);
+			Task.Run(() => RunCallbacksController());
 			this.Running = true;
 		}
 
 		public void Stop()
 		{
-			DiscordRpc.Shutdown();
 			CallbacksCts.Cancel();
+			DiscordRpc.Shutdown();
 			this.Running = false;
 		}
 
 		public void ReadyCallback()
 		{
+			//
 		}
 
 		public void DisconnectedCallback(int errorCode, string message)
@@ -54,7 +55,7 @@ namespace PlayStationDiscord
 			Logger.Write($"Error callback fired: {errorCode} - {message}");
 		}
 
-		private static async Task RunCallbacksController()
+		private static void RunCallbacksController()
 		{
 			while (!CallbacksCts.IsCancellationRequested)
 			{

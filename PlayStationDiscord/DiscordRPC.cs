@@ -5,6 +5,8 @@ using System.Text;
 
 public class DiscordRpc
 {
+	// The connectedUser arg breaks callback functionality
+	// See: https://github.com/discordapp/discord-rpc/issues/220#issuecomment-426458700
 	[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 	public delegate void ReadyCallback(/*ref DiscordUser connectedUser */);
 

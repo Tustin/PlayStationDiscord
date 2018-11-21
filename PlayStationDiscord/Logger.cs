@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PlayStationDiscord
 {
-	class Logger
+	internal class Logger
 	{
 		private static string LogFile => Config.ApplicationDataDirectory + "/log.txt";
 
@@ -17,7 +13,7 @@ namespace PlayStationDiscord
 		/// Acquires a lock on <see cref="LogFile"/> and writes <paramref name="line"/>.
 		/// </summary>
 		/// <param name="line">String to log.</param>
-		public static void Write(string line)
+		internal static void Write(string line)
 		{
 			lock (Mutex)
 			{

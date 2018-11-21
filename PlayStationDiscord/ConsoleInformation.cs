@@ -4,7 +4,6 @@ namespace PlayStationDiscord
 {
 	public class ConsoleInformation
 	{
-
 		public string ImageKeyName { get; protected set; }
 
 		public string Name { get; protected set; }
