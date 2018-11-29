@@ -13,6 +13,7 @@ using PlayStationSharp.API;
 using PlayStationSharp.Model.ProfileJsonTypes;
 using PlayStationDiscord.Exceptions;
 using System.IO;
+using System.ComponentModel;
 
 namespace PlayStationDiscord
 {
@@ -207,7 +208,7 @@ namespace PlayStationDiscord
 				}
 
 				// If the new game doesn't equal the last game, reset the time.
-				if (!game.NpTitleId.Equals(CurrentGame))
+				if (!game.NpTitleId.Equals(CurrentGame) || CurrentGame == default(string))
 				{
 					DiscordController.presence.startTimestamp = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
 					CurrentGame = game.NpTitleId;
@@ -217,6 +218,10 @@ namespace PlayStationDiscord
 				{
 					DiscordController.presence.startTimestamp = (long)(TimeStarted - new DateTime(1970, 1, 1)).TotalSeconds;
 				}
+			}
+			else
+			{
+				CurrentGame = default(string);
 			}
 
 			DiscordController.presence.largeImageKey = largeImageKey;
@@ -335,20 +340,29 @@ namespace PlayStationDiscord
 
 		private void SignIn_Closed(object sender, EventArgs e)
 		{
-			if (PlayStationAccount == null) return;
+			if (PlayStationAccount == null)
+			{
+				return;
+			}
 
 			TryAutomaticLogin();
 		}
 
-		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+		private void Window_Closing(object sender, CancelEventArgs e)
 		{
 			HandleShutdown();
 		}
 
 		private void togEnableRP_PreviewMouseUp(object sender, MouseButtonEventArgs e)
 		{
-			if (togEnableRP.IsOn) StopDiscordControllers();
-			else StartDiscordControllers();
+			if (togEnableRP.IsOn)
+			{
+				StopDiscordControllers();
+			}
+			else
+			{
+				StartDiscordControllers();
+			}
 		}
 
 		private void Window_StateChanged(object sender, EventArgs e)
