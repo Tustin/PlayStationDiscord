@@ -15,7 +15,7 @@ body {
     flex-direction: column;
     min-height: 100vh;
 }
- 
+
 // Main
 .landing {
     margin-top: 50px;
@@ -26,7 +26,7 @@ body {
         font-size: 36px;
         font-weight: 700;
         line-height: 44px;
-        color: #FFF;
+        color: #fff;
     }
 
     .tagline {
@@ -45,14 +45,14 @@ body {
         font-size: 15px;
         line-height: 45px;
         background-color: $blurple;
-        color: #FFF;
-        transition: all .35s cubic-bezier(.25,.25,.315,1.35);
-        box-shadow: rgba(0, 0, 0, .25) 0px 2px 6px 0px;
+        color: #fff;
+        transition: all 0.35s cubic-bezier(0.25, 0.25, 0.315, 1.35);
+        box-shadow: rgba(0, 0, 0, 0.25) 0px 2px 6px 0px;
     }
 
     .download-button:hover {
         background-color: $blurple-hover;
-        box-shadow: rgba(0, 0, 0, .5) 0px 2px 6px 0px;
+        box-shadow: rgba(0, 0, 0, 0.5) 0px 2px 6px 0px;
     }
 
     .social {
@@ -66,8 +66,8 @@ body {
             width: auto;
             padding: 0 10px;
             cursor: pointer;
-            opacity: .8;
-            transition: all .35s cubic-bezier(.25,.25,.315,1.35);
+            opacity: 0.8;
+            transition: all 0.35s cubic-bezier(0.25, 0.25, 0.315, 1.35);
         }
 
         .icon:hover {
@@ -77,12 +77,8 @@ body {
 }
 
 .carousel-caption {
-    bottom: 0px !important;
+    bottom: 0px;
     padding: 0;
-
-    h3 {
-        background-color: rgba(0, 0, 0, 0.3);
-    }
 }
 
 .showcase {
@@ -92,14 +88,22 @@ body {
     flex: 2;
 
     .platform-title {
+        font-size: 25px;
         text-align: center;
         color: $text-primary;
-        margin-top: 5px;
+        margin-top: 15px;
     }
-    
+
     img {
         display: block;
         margin: 0 auto;
+        border-radius: 3px;
+        box-shadow: $boxshadow-3;
+        transition: $boxshadow-transition;
+    }
+
+    img:hover {
+        box-shadow: $boxshadow-5;
     }
 
     .playstation-3 {
@@ -128,6 +132,41 @@ footer {
         a {
             color: $text-primary;
         }
+
+        a:hover {
+            color: #fff;
+            text-decoration: none;
+        }
     }
     margin-bottom: 5px;
+}
+
+// Mobile
+@mixin max-width($width) {
+    @media screen and (max-width: $width) {
+        @content;
+    }
+}
+
+@include max-width(1000px) {
+    .showcase {
+        .platform-title {
+            margin-bottom: 50px;
+        }
+
+        .playstation-3 {
+            grid-column: 1;
+            grid-row: 1;
+        }
+
+        .playstation-4 {
+            grid-column: 1;
+            grid-row: 2;
+        }
+
+        .playstation-vita {
+            grid-column: 1;
+            grid-row: 3;
+        }
+    }
 }

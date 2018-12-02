@@ -1,6 +1,6 @@
-$.getJSON('./assets/games.json', function(json) {
-    let width = 512;
-    let height = 288;
+$.getJSON("./assets/games.json", function(json) {
+    let width = 384;
+    let height = 216;
     let chosen = [];
 
     // Because Javascript is 'good'.
@@ -15,9 +15,9 @@ $.getJSON('./assets/games.json', function(json) {
 
         let game = json[random];
 
-        $("#game" + i + " > img").attr('src', game.largeImageUrl);
-        $("#game" + i + " > img").attr('width', width);
-        $("#game" + i + " > img").attr('height', height);
+        $("#game" + i + " > img").attr("src", game.largeImageUrl);
+        $("#game" + i + " > img").attr("width", width);
+        $("#game" + i + " > img").attr("height", height);
 
         $("#game" + i + " > div > h3").text(game.name);
     }
