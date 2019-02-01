@@ -1,6 +1,6 @@
-export interface DiscordPresenceModel
+export interface IDiscordPresenceModel
 {
-  	details: string;
-	state?: string;
-  	startTimestamp?: number;
+  	details : string;
+	state? : string;
+  	startTimestamp? : number;
 }

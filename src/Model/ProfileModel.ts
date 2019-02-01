@@ -1,24 +1,24 @@
-interface AvatarUrlModel
+interface IAvatarUrlModel
 {
-	size:		string;
-	avatarUrl:	string;
+	size : string;
+	avatarUrl : string;
 }
 
-interface PresenceModel
+export interface IPresenceModel
 {
-	onlineStatus:	string;
-	platform:		string;
-	npTitleId:		string;
-	titleName:		string;
-	npTitleIconUrl:	string;
-	gameStatus:		string;
+	onlineStatus : string;
+	platform : string;
+	npTitleId : string;
+	titleName : string;
+	npTitleIconUrl : string;
+	gameStatus : string;
 }
 
-export interface ProfileModel
+export interface IProfileModel
 {
-	onlineId: 				string;
-	avatarUrls: 			AvatarUrlModel[];
-	plus:					boolean;
-	primaryOnlineStatus: 	string;
-	presences:				PresenceModel[];
+	onlineId : string;
+	avatarUrls : IAvatarUrlModel[];
+	plus : boolean;
+	primaryOnlineStatus : string;
+	presences : IPresenceModel[];
 }

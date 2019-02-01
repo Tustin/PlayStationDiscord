@@ -4,32 +4,30 @@ export const psVitaClientId : string 	= '493957159323828259';
 
 let discordClient : any;
 
-import {DiscordPresenceModel } from './Model/DiscordPresenceModel';
+import { IDiscordPresenceModel } from './Model/DiscordPresenceModel';
 
-interface DiscordPresenceDefaultDataModel
+interface IDiscordPresenceDefaultDataModel
 {
-	largeImageKey: string;
-	largeImageText: string;
-  	smallImageKey: string;
-  	smallImageText: string;
-  	instance: boolean;
+  	instance : boolean;
+	largeImageKey : string;
+	largeImageText : string;
+  	smallImageKey : string;
+  	smallImageText : string;
 }
-
-// type DiscordActivity = DiscordPresenceModel | DiscordPresenceDefaultDataModel;
 
 export class DiscordController
 {
 	private _currentConsole : string;
 	private _running : boolean = false;
-	private _defaultInfo : DiscordPresenceDefaultDataModel =  {
-		largeImageKey: "ps4_main",
-		largeImageText: "PlayStation 4",
-		smallImageKey: "ps4_main",
-		smallImageText: "PlayStation 4",
-		instance: true
+	private _defaultInfo : IDiscordPresenceDefaultDataModel =  {
+		instance: true,
+		largeImageKey: 'ps4_main',
+		largeImageText: 'PlayStation 4',
+		smallImageKey: 'ps4_main',
+		smallImageText: 'PlayStation 4'
 	};
 
-	constructor(clientId : string)
+	constructor(clientId: string)
 	{
 		this._currentConsole = clientId;
 
@@ -38,24 +36,27 @@ export class DiscordController
 		this._running = true;
 	}
 
-	running() : boolean
+	public running() : boolean
 	{
 		return this._running;
 	}
 
-	stop() : void
+	public stop() : void
 	{
 		discordClient.disconnect();
 		this._running = false;
 		console.log('discord client destroyed');
 	}
 
-	update(data : DiscordPresenceModel) : Promise<void>
+	public update(data: IDiscordPresenceModel) : Promise<void>
 	{
 		return new Promise((resolve, reject) => {
-			if (!this.running()) {
+			if (!this.running())
+			{
 				reject('discord controller not running');
-			} else {
+			}
+			else
+			{
 				discordClient.updatePresence({...this._defaultInfo, ...data});
 				resolve();
 			}

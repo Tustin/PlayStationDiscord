@@ -1,12 +1,12 @@
 const { remote } = require('electron');
 
-var currentWindow = remote.BrowserWindow.getFocusedWindow();
+const currentWindow = remote.BrowserWindow.getFocusedWindow();
 
-document.getElementById("minimize").addEventListener("click", function (e) {
+document.getElementById('minimize').addEventListener('click', (e) => {
 	currentWindow.minimize();
 });
 
-document.getElementById("maximize").addEventListener("click", function (e) {
+document.getElementById('maximize').addEventListener('click', (e) => {
 	if (currentWindow.isMaximized())
 	{
 		currentWindow.unmaximize();
@@ -17,6 +17,6 @@ document.getElementById("maximize").addEventListener("click", function (e) {
 	}
 });
 
-document.getElementById("close").addEventListener("click", function (e) {
+document.getElementById('close').addEventListener('click', (e) => {
 	currentWindow.close();
 });
