@@ -80,12 +80,19 @@ function login(data: string) : Promise<OAuthTokenResponseModel>
 function spawnMainWindow() : void
 {
 	mainWindow = new BrowserWindow({
-		width: 200,
-		height: 200,
+		width: 490,
+		height: 450,
+		minWidth: 490,
+		minHeight: 450,
 		webPreferences: {
 			nodeIntegration: true
-		}
+		},
+		frame: false
 	});
+
+	mainWindow.loadFile('./app.html');
+
+	mainWindow.webContents.openDevTools()
 
 	mainWindow.on("closed", () => {
     	mainWindow = null;
@@ -149,20 +156,21 @@ app.on('ready', () => {
 				});
 
 
-				login(data).then((data) => {
+				login(data).then((data) =>
+				{
 					store.set('tokens', data);
 					console.log('successfully saved tokens');
 
 					loginWindow.close();
 
 					spawnMainWindow();
-
-					}).catch((err) => {
-						console.log(err);
+				})
+				.catch((err) =>
+				{
+					console.log(err);
 				});
 			}
         });
-
 	}
 });
 

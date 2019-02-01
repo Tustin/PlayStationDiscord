@@ -4,7 +4,6 @@
     "target": "es6",
     "noImplicitAny": true,
     "removeComments": true,
-    "sourceMap": true,
     "outDir": "dist",
     "baseUrl": ".",
     "paths": {
