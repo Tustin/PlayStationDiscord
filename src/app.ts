@@ -4,7 +4,9 @@ import queryString = require('query-string');
 import https = require('https');
 import { ProfileModel } from './Model/ProfileModel'
 import { OAuthTokenResponseModel, OAuthTokenCodeRequestModel, OAuthTokenRefreshRequestModel } from './Model/AuthenticationModel'
-const discordClient = require('discord-rich-presence')('457775893746810880');
+import { DiscordController, ps4ClientId, ps3ClientId, psVitaClientId } from './DiscordController';
+import { DiscordPresenceModel } from './Model/DiscordPresenceModel';
+
 const util = require('util');
 
 const userDataPath = app.getPath ('userData');
@@ -12,13 +14,14 @@ const store = new Store({cwd: userDataPath});
 
 const sonyLoginUrl: string = 'https://id.sonyentertainmentnetwork.com/signin/?service_entity=urn:service-entity:psn&response_type=code&client_id=ba495a24-818c-472b-b12d-ff231c1b5745&redirect_uri=https://remoteplay.dl.playstation.net/remoteplay/redirect&scope=psn:clientapp&request_locale=en_US&ui=pr&service_logo=ps&layout_type=popup&smcid=remoteplay&PlatformPrivacyWs1=exempt&error=login_required&error_code=4165&error_description=User+is+not+authenticated#/signin?entry=%2Fsignin';
 
-let mainWindow:		BrowserWindow = null;
-let loginWindow:	BrowserWindow = null;
+let mainWindow : BrowserWindow = null;
+let loginWindow : BrowserWindow = null;
 
+let discordController : DiscordController = null;
 
 function login(data: string) : Promise<OAuthTokenResponseModel>
 {
-	return new Promise<OAuthTokenResponseModel>(function (resolve, reject) {
+	return new Promise<OAuthTokenResponseModel>((resolve, reject) => {
 		let options: any = {
 			method: 'POST',
 			port: 443,
@@ -31,10 +34,10 @@ function login(data: string) : Promise<OAuthTokenResponseModel>
 			}
 		};
 
-		let request = https.request(options, function(response) {
+		let request = https.request(options, (response) => {
 			response.setEncoding('ascii');
 			
-			response.on('data', function(body) {
+			response.on('data', (body) => {
 				let info = JSON.parse(body);
 
 				if (info.error)
@@ -48,7 +51,7 @@ function login(data: string) : Promise<OAuthTokenResponseModel>
 			});
 		});
 
-		request.on('error', function (err) {
+		request.on('error', (err) => {
 			reject('failed sending oauth token request: ' + err)
 		});
 
@@ -70,17 +73,57 @@ function spawnMainWindow() : void
 		frame: false
 	});
 
+	discordController = new DiscordController(ps4ClientId);
+
 	mainWindow.loadFile('./app.html');
 
 	mainWindow.webContents.openDevTools();
 
-	mainWindow.webContents.on('did-finish-load', function() {
+	mainWindow.webContents.on('did-finish-load', () => {
 		// Init this here just in case the initial richPresenceLoop fails and needs to call clearInterval.
 		let loop : NodeJS.Timeout;
 
 		function richPresenceLoop() : void
 		{
 			fetchProfile().then((profile) => {
+				if (profile.primaryOnlineStatus != 'online' && discordController.running())
+				{
+					discordController.stop();
+				}
+				else if (profile.primaryOnlineStatus == 'online')
+				{
+					let presenceData  : DiscordPresenceModel;
+
+					if (!discordController.running())
+					{
+						discordController = new DiscordController(ps4ClientId);
+					}
+
+					// We really should start handling multiple presences properly at this point...
+					let presence = profile.presences[0];
+
+					if (presence.titleName == null)
+					{
+						presenceData = {
+							details: 'Online',
+						}
+					}
+					else
+					{
+						presenceData = {
+							details: presence.titleName,
+							state: presence.gameStatus,
+							startTimestamp: Date.now()
+						}
+					}
+
+					discordController.update(presenceData).then(() => {
+						console.log('updated rich presence')
+					})
+					.catch((err) => {
+						console.log(err);
+					})
+				}
 				mainWindow.webContents.send('profile-data', profile); 
 			})
 			.catch((err) => {
@@ -101,7 +144,7 @@ function spawnMainWindow() : void
 
 function fetchProfile() : Promise<ProfileModel>
 {
-	return new Promise<ProfileModel>(function (resolve, reject) {
+	return new Promise<ProfileModel>((resolve, reject) => {
 		let accessToken = store.get('tokens.access_token', true);
 
 		var options = {
@@ -114,8 +157,8 @@ function fetchProfile() : Promise<ProfileModel>
 			}
 		}
 
-		let request = https.request(options, function(response) {
-			response.setEncoding('ascii');
+		let request = https.request(options, (response) => {
+			response.setEncoding('utf8');
 			
 			response.on('data', function(body) {
 				let info = JSON.parse(body);
@@ -131,7 +174,7 @@ function fetchProfile() : Promise<ProfileModel>
 			});
 		});
 
-		request.on('error', function (err) {
+		request.on('error', (err) => {
 			reject('failed fetching profile from PSN: ' + err)
 		});
 
@@ -177,7 +220,7 @@ app.on('ready', () => {
 
 		loginWindow.loadURL(sonyLoginUrl);
 		
-		loginWindow.webContents.on('did-finish-load', function () {
+		loginWindow.webContents.on('did-finish-load', () => {
 			let url: string = loginWindow.webContents.getURL();
 
 			if (url.startsWith('https://remoteplay.dl.playstation.net/remoteplay/redirect'))
