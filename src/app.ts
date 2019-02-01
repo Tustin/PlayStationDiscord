@@ -1,8 +1,11 @@
-import {app, BrowserWindow} from 'electron';
+import {app, BrowserWindow, ipcMain} from 'electron';
 import Store = require('electron-store');
 import queryString = require('query-string');
 import https = require('https');
+import { ProfileModel } from './Model/ProfileModel'
+import { OAuthTokenResponseModel, OAuthTokenCodeRequestModel, OAuthTokenRefreshRequestModel } from './Model/AuthenticationModel'
 const discordClient = require('discord-rich-presence')('457775893746810880');
+const util = require('util');
 
 const userDataPath = app.getPath ('userData');
 const store = new Store({cwd: userDataPath});
@@ -12,29 +15,6 @@ const sonyLoginUrl: string = 'https://id.sonyentertainmentnetwork.com/signin/?se
 let mainWindow:		BrowserWindow = null;
 let loginWindow:	BrowserWindow = null;
 
-interface OAuthTokenResponseModel
-{
-	access_token: 	string;
-	token_type: 	string;
-	refresh_token: 	string;
-	expires_in: 	number;
-	scope:			string;
-}
-
-interface OAuthTokenCodeRequestModel
-{
-	code: 			string;
-	grant_type: 	string;
-	redirect_uri:	string;
-}
-
-interface OAuthTokenRefreshRequestModel
-{
-	refresh_token: 	string;
-	grant_type: 	string;
-	redirect_uri:	string;
-	scope:			string;
-}
 
 function login(data: string) : Promise<OAuthTokenResponseModel>
 {
@@ -92,31 +72,90 @@ function spawnMainWindow() : void
 
 	mainWindow.loadFile('./app.html');
 
-	mainWindow.webContents.openDevTools()
+	mainWindow.webContents.openDevTools();
+
+	mainWindow.webContents.on('did-finish-load', function() {
+		// Init this here just in case the initial richPresenceLoop fails and needs to call clearInterval.
+		let loop : NodeJS.Timeout;
+
+		function richPresenceLoop() : void
+		{
+			fetchProfile().then((profile) => {
+				mainWindow.webContents.send('profile-data', profile); 
+			})
+			.catch((err) => {
+				console.log(err);
+				clearInterval(loop);
+			});
+		}
+
+		richPresenceLoop();
+
+		loop = setInterval(richPresenceLoop, 30000);
+	});
 
 	mainWindow.on("closed", () => {
-    	mainWindow = null;
-  	});
+		mainWindow = null;
+	});
 }
 
-let tokens: OAuthTokenResponseModel = null;
+function fetchProfile() : Promise<ProfileModel>
+{
+	return new Promise<ProfileModel>(function (resolve, reject) {
+		let accessToken = store.get('tokens.access_token', true);
+
+		var options = {
+			method: 'GET',
+			port: 443,
+			hostname: 'us-prof.np.community.playstation.net',
+			path: '/userProfile/v1/users/me/profile2?fields=onlineId,avatarUrls,plus,primaryOnlineStatus,presences(@titleInfo)&avatarSizes=m,xl&titleIconSize=s',
+			headers: {
+				'Authorization': `Bearer ${accessToken}`
+			}
+		}
+
+		let request = https.request(options, function(response) {
+			response.setEncoding('ascii');
+			
+			response.on('data', function(body) {
+				let info = JSON.parse(body);
+
+				if (info.error)
+				{
+					reject('failed getting profile because of a PSN API error: ' + info.error_description);
+				}
+				else
+				{
+					resolve(info.profile);
+				}
+			});
+		});
+
+		request.on('error', function (err) {
+			reject('failed fetching profile from PSN: ' + err)
+		});
+
+		request.end();
+	});
+}
 
 app.on('ready', () => {
 
 	if (store.has('tokens'))
 	{
-		tokens = store.get('tokens');
+		let tokens = store.get('tokens');
 
 		let requestData: string = queryString.stringify(<OAuthTokenRefreshRequestModel> {
 			grant_type: 'refresh_token',
 			refresh_token: tokens.refresh_token,
 			redirect_uri: 'https://remoteplay.dl.playstation.net/remoteplay/redirect',
-			scope: 'psn:clientapp'
+			scope: tokens.scope
 		});
 
 		login(requestData).then((responseData) => {
 			store.set('tokens', responseData);
 			console.log('successfully updated tokens');
+			fetchProfile();
 			spawnMainWindow();
 			
 		}).catch((err) => {
@@ -131,6 +170,10 @@ app.on('ready', () => {
 			webPreferences: {
 				nodeIntegration: false
 			}
+		});
+
+		loginWindow.on("closed", () => {
+			loginWindow = null;
 		});
 
 		loginWindow.loadURL(sonyLoginUrl);
@@ -155,22 +198,21 @@ app.on('ready', () => {
 					redirect_uri: 'https://remoteplay.dl.playstation.net/remoteplay/redirect'
 				});
 
-
 				login(data).then((data) =>
 				{
 					store.set('tokens', data);
 					console.log('successfully saved tokens');
 
-					loginWindow.close();
-
 					spawnMainWindow();
+
+					loginWindow.close();
 				})
 				.catch((err) =>
 				{
 					console.log(err);
 				});
 			}
-        });
+		});
 	}
 });
 
