@@ -155,7 +155,6 @@ app.on('ready', () => {
 		login(requestData).then((responseData) => {
 			store.set('tokens', responseData);
 			console.log('successfully updated tokens');
-			fetchProfile();
 			spawnMainWindow();
 			
 		}).catch((err) => {
