@@ -22,7 +22,7 @@
     	"no-console": false,
     	"no-irregular-whitespace": true,
     	"no-trailing-whitespace": true,
-    	"no-var-requires": false, // This needs to be here because of not being able to use import in Electron renderer processes.
+    	"no-var-requires": false,
     	"number-literal-format": true,
     	"one-variable-per-declaration": [true, "ignore-for-loop"],
     	"object-literal-sort-keys": false,
