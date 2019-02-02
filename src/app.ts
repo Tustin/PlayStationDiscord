@@ -149,7 +149,6 @@ function spawnMainWindow() : void
 
 						discordController.update(discordRichPresenceData, discordRichPresenceOptionsData).then(() => {
 							console.log('updated rich presence');
-							
 							mainWindow.webContents.send('profile-data', profile);
 						}).catch((err) => {
 							console.log(err);
