@@ -31,6 +31,7 @@
   },
   "homepage": "https://tusticles.com/PlayStationDiscord/",
   "dependencies": {
+    "@polymer/paper-button": "^3.0.1",
     "discord-rich-presence": "0.0.8",
     "electron": "^4.0.3",
     "electron-store": "^2.0.0",

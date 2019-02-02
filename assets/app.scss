@@ -1,4 +1,5 @@
 @import '_theme';
+@import '_button';
 @import "../node_modules/@fortawesome/fontawesome-free/scss/fontawesome";
 @import "../node_modules/@fortawesome/fontawesome-free/scss/regular";
 @import "../node_modules/@fortawesome/fontawesome-free/scss/solid";
@@ -110,16 +111,38 @@ body {
 
 	main {
 		display: flex;
-		flex-direction: row;
-		img#avatar {
-			width: 200px;
-			height: 200px;
-			pointer-events: none;
+		flex-direction: column;
+		flex-wrap: nowrap;
+		height: 100%;
+		width: 100%;
+		.playstation-info
+		{
+			flex: 1;
+			display: flex;
+
+			img#avatar {
+				width: 200px;
+				height: 200px;
+				pointer-events: none;
+			}
+
+			.presence-details
+			{
+				flex-direction: column;
+
+				p#state {
+					color: $text-secondary;
+					font-size: 8px;
+				}
+			}
 		}
-		p#state {
-			color: $text-secondary;
-			font-size: 8px;
+
+		.options
+		{
+			flex: 2;
+			display: flex;
 		}
+
 	}
 }
 

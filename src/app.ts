@@ -67,6 +67,7 @@ function spawnMainWindow() : void
 		height: 450,
 		minWidth: 490,
 		minHeight: 450,
+		show: false,
 		webPreferences: {
 			nodeIntegration: true
 		},
@@ -166,6 +167,11 @@ function spawnMainWindow() : void
 		richPresenceLoop();
 
 		loop = setInterval(richPresenceLoop, 15000);
+	});
+
+	mainWindow.on('ready-to-show', () => {
+		mainWindow.show();
+		mainWindow.focus();
 	});
 
 	mainWindow.on('closed', () => {
