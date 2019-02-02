@@ -4,7 +4,7 @@ export const psVitaClientId : string 	= '493957159323828259';
 
 let discordClient : any;
 
-import { IDiscordPresenceModel } from './Model/DiscordPresenceModel';
+import { IDiscordPresenceModel, IDiscordPresenceUpdateOptions } from './Model/DiscordPresenceModel';
 
 interface IDiscordPresenceDefaultDataModel
 {
@@ -19,6 +19,7 @@ export class DiscordController
 {
 	private _currentConsole : string;
 	private _running : boolean = false;
+	private _lastStartTimestamp : number;
 	private _defaultInfo : IDiscordPresenceDefaultDataModel =  {
 		instance: true,
 		largeImageKey: 'ps4_main',
@@ -48,7 +49,7 @@ export class DiscordController
 		console.log('discord client destroyed');
 	}
 
-	public update(data: IDiscordPresenceModel) : Promise<void>
+	public update(data: IDiscordPresenceModel, options?: IDiscordPresenceUpdateOptions) : Promise<void>
 	{
 		return new Promise((resolve, reject) => {
 			if (!this.running())
@@ -57,6 +58,21 @@ export class DiscordController
 			}
 			else
 			{
+				const usingOptions = options !== undefined;
+
+				if (!usingOptions || !options.hideTimestamp)
+				{
+					if (data.startTimestamp === undefined)
+					{
+						console.log('no time set, using last saved one');
+						data.startTimestamp = this._lastStartTimestamp;
+					}
+					else
+					{
+						this._lastStartTimestamp = data.startTimestamp;
+					}
+				}
+
 				discordClient.updatePresence({...this._defaultInfo, ...data});
 				resolve();
 			}

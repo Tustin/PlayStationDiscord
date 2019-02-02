@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import { IPresenceModel, IProfileModel } from './Model/ProfileModel';
 import { IOAuthTokenCodeRequestModel, IOAuthTokenRefreshRequestModel, IOAuthTokenResponseModel, } from './Model/AuthenticationModel';
 import { DiscordController, ps4ClientId, ps3ClientId, psVitaClientId } from './DiscordController';
-import { IDiscordPresenceModel } from './Model/DiscordPresenceModel';
+import { IDiscordPresenceModel, IDiscordPresenceUpdateOptions } from './Model/DiscordPresenceModel';
 
 import _store = require('electron-store');
 import queryString = require('query-string');
@@ -16,8 +16,8 @@ const sonyLoginUrl : string = 'https://id.sonyentertainmentnetwork.com/signin/?s
 let mainWindow : BrowserWindow = null;
 let loginWindow : BrowserWindow = null;
 
-let discordController : DiscordController = null;
-let previousPresence : IPresenceModel = null;
+let discordController : DiscordController;
+let previousPresence : IPresenceModel;
 
 function login(data: string) : Promise<IOAuthTokenResponseModel>
 {
@@ -92,7 +92,8 @@ function spawnMainWindow() : void
 				}
 				else if (profile.primaryOnlineStatus === 'online')
 				{
-					let presenceData : IDiscordPresenceModel;
+					let discordRichPresenceData : IDiscordPresenceModel;
+					let discordRichPresenceOptionsData : IDiscordPresenceUpdateOptions;
 
 					if (!discordController.running())
 					{
@@ -102,39 +103,59 @@ function spawnMainWindow() : void
 					// We really should start handling multiple presences properly at this point...
 					const presence = profile.presences[0];
 
-					if (presence.titleName === null)
+					// Setup previous presence with the current presence if it's empty.
+					// Update status if the titleId has changed.
+					if (previousPresence === undefined || previousPresence.npTitleId !== presence.npTitleId)
 					{
-						presenceData = {
-							details: 'Online'
-						};
+						// See if we're actually playing a title.
+						if (presence.npTitleId === undefined)
+						{
+							discordRichPresenceData = {
+								details: 'Online',
+							};
+
+							discordRichPresenceOptionsData = {
+								hideTimestamp: true
+							};
+
+							console.log('status set to online');
+						}
+						else
+						{
+							discordRichPresenceData = {
+								details: presence.titleName,
+								state: presence.gameStatus,
+								startTimestamp: Date.now()
+							};
+
+							console.log('found new game');
+						}
 					}
-					else
+					// Update if game status has changed.
+					else if (previousPresence === undefined || previousPresence.gameStatus !== presence.gameStatus)
 					{
-						presenceData = {
+						discordRichPresenceData = {
 							details: presence.titleName,
 							state: presence.gameStatus,
 						};
 
-						if (presence === null || previousPresence.npTitleId !== presence.npTitleId)
-						{
-							// This checks if the game has changed since the last update.
-							// If it has, then reset the timestamp.
-							presenceData.startTimestamp = Date.now();
-							console.log('reset start timestamp');
-						}
+						console.log('game status changed');
 					}
 
-					// Cache it.
-					previousPresence = presence;
+					if (discordRichPresenceData !== undefined)
+					{
+						// Cache it.
+						previousPresence = presence;
 
-					discordController.update(presenceData).then(() => {
-						console.log('updated rich presence');
-					})
-					.catch((err) => {
-						console.log(err);
-					});
+						discordController.update(discordRichPresenceData, discordRichPresenceOptionsData).then(() => {
+							console.log('updated rich presence');
+							
+							mainWindow.webContents.send('profile-data', profile);
+						}).catch((err) => {
+							console.log(err);
+						});
+					}
 				}
-				mainWindow.webContents.send('profile-data', profile);
 			})
 			.catch((err) => {
 				console.log(err);
@@ -144,7 +165,7 @@ function spawnMainWindow() : void
 
 		richPresenceLoop();
 
-		loop = setInterval(richPresenceLoop, 30000);
+		loop = setInterval(richPresenceLoop, 15000);
 	});
 
 	mainWindow.on('closed', () => {
