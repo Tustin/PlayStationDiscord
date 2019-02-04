@@ -1,8 +1,6 @@
 const { ipcRenderer } = require('electron');
 
 ipcRenderer.on('profile-data', (event: any, data: any) => {
-	console.log('got profile info', data);
-
 	const image : HTMLImageElement = document.getElementById('avatar') as HTMLImageElement;
 	image.src = data.avatarUrls[0].avatarUrl;
 
@@ -10,8 +8,6 @@ ipcRenderer.on('profile-data', (event: any, data: any) => {
 });
 
 ipcRenderer.on('presence-data', (event: any, data: any) => {
-	console.log('got presence info', data);
-
 	const details = document.getElementById('details');
 	const state = document.getElementById('state');
 

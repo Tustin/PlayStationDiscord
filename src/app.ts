@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { IPresenceModel, IProfileModel } from './Model/ProfileModel';
 import { IOAuthTokenCodeRequestModel, IOAuthTokenRefreshRequestModel, IOAuthTokenResponseModel, } from './Model/AuthenticationModel';
 import { DiscordController, ps4ClientId, ps3ClientId, psVitaClientId } from './DiscordController';
@@ -8,6 +8,7 @@ import _store = require('electron-store');
 import queryString = require('query-string');
 import https = require('https');
 import util = require('util');
+import log = require('electron-log');
 
 const store = new _store();
 
@@ -42,7 +43,7 @@ function login(data: string) : Promise<IOAuthTokenResponseModel>
 
 				if (info.error)
 				{
-					reject('failed writing token because of a PSN API error: ' + info.error_description);
+					reject(info);
 				}
 				else
 				{
@@ -52,11 +53,86 @@ function login(data: string) : Promise<IOAuthTokenResponseModel>
 		});
 
 		request.on('error', (err) => {
-			reject('failed sending oauth token request: ' + err);
+			reject(err);
 		});
 
 		request.write(data);
 		request.end();
+	});
+}
+
+// Relevant: https://i.imgur.com/7QDkNqx.png
+function showMessageAndDie(message: string, detail?: string) : void
+{
+	dialog.showMessageBox(null, {
+		type: 'error',
+		title: 'PlayStationDiscord Error',
+		message,
+		detail
+	}, () => {
+		app.quit();
+	});
+}
+
+function spawnLoginWindow() : void
+{
+	loginWindow = new BrowserWindow({
+		width: 590,
+		height: 850,
+		webPreferences: {
+			nodeIntegration: false
+		}
+	});
+
+	loginWindow.on('closed', () => {
+		loginWindow = null;
+	});
+
+	loginWindow.loadURL(sonyLoginUrl);
+
+	loginWindow.webContents.on('did-finish-load', () => {
+		const url : string = loginWindow.webContents.getURL();
+
+		if (url.startsWith('https://remoteplay.dl.playstation.net/remoteplay/redirect'))
+		{
+			const query : string = queryString.extract(url);
+			const items : any = queryString.parse(query);
+
+			if (!items.code)
+			{
+				log.error('Redirect URL was found but there was no code in the query string', items);
+				showMessageAndDie(
+					'An error has occurred during the PSN login process. Please try again.',
+					'If the problem persists, please open an issue on the GitHub repo.'
+				);
+
+				return;
+			}
+
+			const data : string = queryString.stringify({
+				grant_type: 'authorization_code',
+				code: items.code,
+				redirect_uri: 'https://remoteplay.dl.playstation.net/remoteplay/redirect'
+			} as IOAuthTokenCodeRequestModel);
+
+			login(data).then((tokenData) =>
+			{
+				store.set('tokens', tokenData);
+				log.info('Saved oauth tokens');
+
+				spawnMainWindow();
+
+				loginWindow.close();
+			})
+			.catch((err) =>
+			{
+				log.error('Unable to get PSN OAuth tokens', err);
+				showMessageAndDie(
+					'An error has occurred during the PSN login process. Please try again.',
+					'If the problem persists, please open an issue on the GitHub repo.'
+				);
+			});
+		}
 	});
 }
 
@@ -83,6 +159,7 @@ function spawnMainWindow() : void
 	mainWindow.webContents.on('did-finish-load', () => {
 		// Init this here just in case the initial richPresenceLoop fails and needs to call clearInterval.
 		let loop : NodeJS.Timeout;
+		let retries : number;
 
 		function richPresenceLoop() : void
 		{
@@ -90,6 +167,7 @@ function spawnMainWindow() : void
 				if (profile.primaryOnlineStatus !== 'online' && discordController.running())
 				{
 					discordController.stop();
+					log.info('DiscordController stopped because the user is not online');
 				}
 				else if (profile.primaryOnlineStatus === 'online')
 				{
@@ -99,6 +177,7 @@ function spawnMainWindow() : void
 					if (!discordController.running())
 					{
 						discordController = new DiscordController(ps4ClientId);
+						log.info('Created new DiscordController instance');
 					}
 
 					// We really should start handling multiple presences properly at this point...
@@ -119,7 +198,7 @@ function spawnMainWindow() : void
 								hideTimestamp: true
 							};
 
-							console.log('status set to online');
+							log.info('Status set to online');
 						}
 						else
 						{
@@ -129,7 +208,7 @@ function spawnMainWindow() : void
 								startTimestamp: Date.now()
 							};
 
-							console.log('found new game');
+							log.info('Game has switched', presence.titleName);
 						}
 					}
 					// Update if game status has changed.
@@ -140,27 +219,34 @@ function spawnMainWindow() : void
 							state: presence.gameStatus,
 						};
 
-						console.log('game status changed');
+						log.info('Game status has changed', presence.gameStatus);
 					}
 
+					// Only send a rich presence update if we have something new.
 					if (discordRichPresenceData !== undefined)
 					{
 						// Cache it.
 						previousPresence = presence;
 
 						discordController.update(discordRichPresenceData, discordRichPresenceOptionsData).then(() => {
-							console.log('updated rich presence');
+							log.info('Updated rich presence');
 							mainWindow.webContents.send('presence-data', discordRichPresenceData);
 						}).catch((err) => {
-							console.log(err);
+							log.error('Failed updating rich presence', err);
 						});
 					}
 				}
 				mainWindow.webContents.send('profile-data', profile);
+				retries = 0;
 			})
 			.catch((err) => {
-				console.log(err);
-				clearInterval(loop);
+				log.error('Failed fetching PSN profile', err);
+
+				if (++retries === 5)
+				{
+					clearInterval(loop);
+					log.error('Stopped rich presence loop because of too many retries without success');
+				}
 			});
 		}
 
@@ -202,7 +288,7 @@ function fetchProfile() : Promise<IProfileModel>
 
 				if (info.error)
 				{
-					reject('failed getting profile because of a PSN API error: ' + info.error_description);
+					reject(body);
 				}
 				else
 				{
@@ -212,7 +298,7 @@ function fetchProfile() : Promise<IProfileModel>
 		});
 
 		request.on('error', (err) => {
-			reject('failed fetching profile from PSN: ' + err);
+			reject(err);
 		});
 
 		request.end();
@@ -234,64 +320,19 @@ app.on('ready', () => {
 
 		login(requestData).then((responseData) => {
 			store.set('tokens', responseData);
-			console.log('successfully updated tokens');
+
+			log.info('Updated PSN OAuth tokens');
+
 			spawnMainWindow();
 		}).catch((err) => {
-			console.log(err);
+			log.error('Failed logging in with saved OAuth tokens', err);
+
+			spawnLoginWindow();
 		});
 	}
 	else
 	{
-		loginWindow = new BrowserWindow({
-			width: 590,
-			height: 850,
-			webPreferences: {
-				nodeIntegration: false
-			}
-		});
-
-		loginWindow.on('closed', () => {
-			loginWindow = null;
-		});
-
-		loginWindow.loadURL(sonyLoginUrl);
-
-		loginWindow.webContents.on('did-finish-load', () => {
-			const url : string = loginWindow.webContents.getURL();
-
-			if (url.startsWith('https://remoteplay.dl.playstation.net/remoteplay/redirect'))
-			{
-				const query : string = queryString.extract(url);
-				const items : any = queryString.parse(query);
-
-				if (!items.code)
-				{
-					console.log('hit redirect url but found no code in query string', items);
-
-					return;
-				}
-
-				const data : string = queryString.stringify({
-					grant_type: 'authorization_code',
-					code: items.code,
-					redirect_uri: 'https://remoteplay.dl.playstation.net/remoteplay/redirect'
-				} as IOAuthTokenCodeRequestModel);
-
-				login(data).then((tokenData) =>
-				{
-					store.set('tokens', tokenData);
-					console.log('successfully saved tokens');
-
-					spawnMainWindow();
-
-					loginWindow.close();
-				})
-				.catch((err) =>
-				{
-					console.log(err);
-				});
-			}
-		});
+		spawnLoginWindow();
 	}
 });
 

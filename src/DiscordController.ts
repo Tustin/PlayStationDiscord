@@ -46,7 +46,6 @@ export class DiscordController
 	{
 		discordClient.disconnect();
 		this._running = false;
-		console.log('discord client destroyed');
 	}
 
 	public update(data: IDiscordPresenceModel, options?: IDiscordPresenceUpdateOptions) : Promise<void>
@@ -64,7 +63,6 @@ export class DiscordController
 				{
 					if (data.startTimestamp === undefined)
 					{
-						console.log('no time set, using last saved one');
 						data.startTimestamp = this._lastStartTimestamp;
 					}
 					else
