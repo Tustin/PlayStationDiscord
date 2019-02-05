@@ -52,6 +52,8 @@ class SupportedGames
 			port: 443,
 		};
 
+		let badLibrary : string = '';
+
 		const request = https.request(options, (response) => {
 			response.setEncoding('utf8');
 
@@ -63,16 +65,19 @@ class SupportedGames
 				return;
 			}
 
-			this.store.set('etag', response.headers.etag);
+			response.on('data', (lolWhyIsThisAChunk) => {
+				badLibrary += lolWhyIsThisAChunk;
+			});
 
-			response.on('data', (body) => {
-				this.store.set('consoles', JSON.parse(body));
+			response.on('end', () => {
+				this.store.set('consoles', JSON.parse(badLibrary));
+				this.store.set('etag', response.headers.etag);
 				log.info('Saved new version of games.json');
 			});
 		});
 
 		request.on('error', (err) => {
-			log.error('Failed requesting games.json from the PlayStationDiscord-Games repo');
+			log.error('Failed requesting games.json from the PlayStationDiscord-Games repo', err);
 		});
 
 		request.end();
