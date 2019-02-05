@@ -9,9 +9,12 @@ import queryString = require('query-string');
 import https = require('https');
 import util = require('util');
 import log = require('electron-log');
+import events = require('events');
+
 const supportedGames = require('./SupportedGames');
 
 const store = new _store();
+const eventEmitter = new events.EventEmitter();
 
 const sonyLoginUrl : string = 'https://id.sonyentertainmentnetwork.com/signin/?service_entity=urn:service-entity:psn&response_type=code&client_id=ba495a24-818c-472b-b12d-ff231c1b5745&redirect_uri=https://remoteplay.dl.playstation.net/remoteplay/redirect&scope=psn:clientapp&request_locale=en_US&ui=pr&service_logo=ps&layout_type=popup&smcid=remoteplay&PlatformPrivacyWs1=exempt&error=login_required&error_code=4165&error_description=User+is+not+authenticated#/signin?entry=%2Fsignin';
 
@@ -50,6 +53,8 @@ function login(data: string) : Promise<IOAuthTokenResponseModel>
 				}
 				else
 				{
+					store.set('tokens', info);
+					eventEmitter.emit('logged-in');
 					resolve(info);
 				}
 			});
@@ -126,7 +131,6 @@ function spawnLoginWindow() : void
 
 			login(data).then((tokenData) =>
 			{
-				store.set('tokens', tokenData);
 				log.info('Saved oauth tokens');
 
 				spawnMainWindow();
@@ -171,9 +175,14 @@ function spawnMainWindow() : void
 
 	mainWindow.webContents.on('did-finish-load', () => {
 		// Init this here just in case the initial richPresenceLoop fails and needs to call clearInterval.
-		let loop : NodeJS.Timeout;
+		let updateRichPresenceLoop : NodeJS.Timeout;
 		let retries : number;
 		let supportedTitleId : string;
+
+		eventEmitter.on('refresh-token-failed', () => {
+			log.info('Stopping update rich presence loop because token refresh failed');
+			clearTimeout(updateRichPresenceLoop);
+		});
 
 		function richPresenceLoop() : void
 		{
@@ -181,6 +190,12 @@ function spawnMainWindow() : void
 				if (profile.primaryOnlineStatus !== 'online' && discordController.running())
 				{
 					discordController.stop();
+
+					// Just update the form like this so we don't update rich presence.
+					mainWindow.webContents.send('presence-data', {
+						details: 'Offline'
+					});
+
 					log.info('DiscordController stopped because the user is not online');
 				}
 				else if (profile.primaryOnlineStatus === 'online')
@@ -278,7 +293,7 @@ function spawnMainWindow() : void
 
 				if (++retries === 5)
 				{
-					clearInterval(loop);
+					clearInterval(updateRichPresenceLoop);
 					log.error('Stopped rich presence loop because of too many retries without success');
 				}
 			});
@@ -286,7 +301,7 @@ function spawnMainWindow() : void
 
 		richPresenceLoop();
 
-		loop = setInterval(richPresenceLoop, 15000);
+		updateRichPresenceLoop = setInterval(richPresenceLoop, 15000);
 	});
 
 	mainWindow.on('ready-to-show', () => {
@@ -302,7 +317,7 @@ function spawnMainWindow() : void
 function fetchProfile() : Promise<IProfileModel>
 {
 	return new Promise<IProfileModel>((resolve, reject) => {
-		const accessToken = store.get('tokens.access_token', true);
+		const accessToken = store.get('tokens.access_token');
 
 		const options = {
 			method: 'GET',
@@ -339,22 +354,46 @@ function fetchProfile() : Promise<IProfileModel>
 	});
 }
 
+function refreshTokenRequestData() : string
+{
+	const tokens = store.get('tokens');
+
+	return queryString.stringify({
+		grant_type: 'refresh_token',
+		refresh_token: tokens.refresh_token,
+		redirect_uri: 'https://remoteplay.dl.playstation.net/remoteplay/redirect',
+		scope: tokens.scope
+	} as IOAuthTokenRefreshRequestModel);
+}
+
+eventEmitter.on('logged-in', () => {
+	const tokenRefreshTimer = setInterval(() => {
+		const requestData = refreshTokenRequestData();
+
+		login(requestData).then((responseData) => {
+			log.info('Refreshed PSN OAuth tokens');
+		})
+		.catch((err) => {
+			// We should probably try this multiple times if it fails, but I can't think of many reasons why it would.
+			log.error('Failed refreshing PSN OAuth tokens', err);
+
+			showMessageAndDie(
+				'Sorry, an error occurred when trying to refresh your account tokens. Please restart the program.'
+			);
+
+			clearInterval(tokenRefreshTimer);
+			eventEmitter.emit('token-refresh-failed');
+		});
+	}, parseInt(store.get('tokens.expires_in'), 10) * 1000);
+});
+
 app.on('ready', () => {
 
 	if (store.has('tokens'))
 	{
-		const tokens = store.get('tokens');
-
-		const requestData : string = queryString.stringify({
-			grant_type: 'refresh_token',
-			refresh_token: tokens.refresh_token,
-			redirect_uri: 'https://remoteplay.dl.playstation.net/remoteplay/redirect',
-			scope: tokens.scope
-		} as IOAuthTokenRefreshRequestModel);
+		const requestData = refreshTokenRequestData();
 
 		login(requestData).then((responseData) => {
-			store.set('tokens', responseData);
-
 			log.info('Updated PSN OAuth tokens');
 
 			spawnMainWindow();
