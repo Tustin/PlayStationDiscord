@@ -7,5 +7,7 @@ export interface IDiscordPresenceModel
 {
   	details : string;
 	state? : string;
+	largeImageKey? : string;
+	largeImageText? : string;
   	startTimestamp? : number;
 }

@@ -25,7 +25,7 @@ export class DiscordController
 		largeImageKey: 'ps4_main',
 		largeImageText: 'PlayStation 4',
 		smallImageKey: 'ps4_main',
-		smallImageText: 'PlayStation 4'
+		smallImageText: 'PlayStationDiscord'
 	};
 
 	constructor(clientId: string)

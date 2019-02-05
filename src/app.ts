@@ -9,6 +9,7 @@ import queryString = require('query-string');
 import https = require('https');
 import util = require('util');
 import log = require('electron-log');
+const supportedGames = require('./SupportedGames');
 
 const store = new _store();
 
@@ -36,7 +37,7 @@ function login(data: string) : Promise<IOAuthTokenResponseModel>
 		};
 
 		const request = https.request(options, (response) => {
-			response.setEncoding('ascii');
+			response.setEncoding('utf8');
 
 			response.on('data', (body) => {
 				const info = JSON.parse(body);
@@ -101,6 +102,7 @@ function spawnLoginWindow() : void
 			if (!items.code)
 			{
 				log.error('Redirect URL was found but there was no code in the query string', items);
+
 				showMessageAndDie(
 					'An error has occurred during the PSN login process. Please try again.',
 					'If the problem persists, please open an issue on the GitHub repo.'
@@ -127,6 +129,7 @@ function spawnLoginWindow() : void
 			.catch((err) =>
 			{
 				log.error('Unable to get PSN OAuth tokens', err);
+
 				showMessageAndDie(
 					'An error has occurred during the PSN login process. Please try again.',
 					'If the problem persists, please open an issue on the GitHub repo.'
@@ -160,6 +163,7 @@ function spawnMainWindow() : void
 		// Init this here just in case the initial richPresenceLoop fails and needs to call clearInterval.
 		let loop : NodeJS.Timeout;
 		let retries : number;
+		let supportedTitleId : string;
 
 		function richPresenceLoop() : void
 		{
@@ -205,10 +209,24 @@ function spawnMainWindow() : void
 							discordRichPresenceData = {
 								details: presence.titleName,
 								state: presence.gameStatus,
-								startTimestamp: Date.now()
+								startTimestamp: Date.now(),
+								largeImageText: presence.titleName
 							};
 
 							log.info('Game has switched', presence.titleName);
+
+							if (supportedGames.has(presence.npTitleId) || supportedGames.has(presence.titleName))
+							{
+								const discordFriendly = presence.npTitleId.toLowerCase();
+								discordRichPresenceData.largeImageKey = discordFriendly;
+								supportedTitleId = discordFriendly;
+
+								log.info('Using game icon since it is supported');
+							}
+							else
+							{
+								supportedTitleId = undefined;
+							}
 						}
 					}
 					// Update if game status has changed.
@@ -217,7 +235,13 @@ function spawnMainWindow() : void
 						discordRichPresenceData = {
 							details: presence.titleName,
 							state: presence.gameStatus,
+							largeImageText: presence.titleName
 						};
+
+						if (supportedTitleId !== undefined)
+						{
+							discordRichPresenceData.largeImageKey = supportedTitleId;
+						}
 
 						log.info('Game status has changed', presence.gameStatus);
 					}
