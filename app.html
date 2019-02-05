@@ -1,32 +1,34 @@
 <head>
-	<link href="assets/app.css" rel="stylesheet" type="text/css" />
+    <link href="assets/app.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
-	<header>
-		<div id="drag-region"></div>
-		<div id="title">PlayStationDiscord</div>
-		<div id="controls">
-			<i id="minimize" class="far fa-window-minimize"></i>
-			<i id="maximize" class="far fa-square"></i>
-			<i id="close" class="fas fa-times"></i>
-		</div>
-	</header>
+    <header>
+        <div id="drag-region"></div>
+        <div id="title">PlayStationDiscord</div>
+        <div id="controls">
+            <i id="minimize" class="far fa-window-minimize"></i>
+            <i id="maximize" class="far fa-square"></i>
+            <i id="close" class="fas fa-times"></i>
+        </div>
+    </header>
 
-	<main>
-		<div class="playstation-info">
-			<img id="avatar" />
-			<div class="presence-details">
-				<h3 id="onlineId"></h3>
-				<p>Status: <span id="details">Offline</span></p>
-				<p id="state"></p>
-			</div>
-		</div>
+    <main>
+        <div class="playstation-info">
+            <img id="avatar" />
+            <div class="presence-details">
+                <h3 id="onlineId"></h3>
+                <p>Status: <span id="details">Offline</span></p>
+                <p id="state"></p>
+            </div>
+        </div>
 
-		<div class="options">
-			<button class='ripple light-blue' id="togglePresence">Toggle Rich Presence</button>
-		</div>
-	</main>
+        <div class="options">
+            <button class="ripple" id="togglePresence">
+                Toggle Rich Presence
+            </button>
+        </div>
+    </main>
 
-	<script src="dist/renderer.js"></script>
-	<script src="dist/titlebar.js"></script>
+    <script src="dist/renderer.js"></script>
+    <script src="dist/titlebar.js"></script>
 </body>

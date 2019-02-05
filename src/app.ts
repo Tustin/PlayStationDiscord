@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, nativeImage } from 'electron';
 import { IPresenceModel, IProfileModel } from './Model/ProfileModel';
 import { IOAuthTokenCodeRequestModel, IOAuthTokenRefreshRequestModel, IOAuthTokenResponseModel, } from './Model/AuthenticationModel';
 import { DiscordController, ps4ClientId, ps3ClientId, psVitaClientId } from './DiscordController';
@@ -14,6 +14,8 @@ const supportedGames = require('./SupportedGames');
 const store = new _store();
 
 const sonyLoginUrl : string = 'https://id.sonyentertainmentnetwork.com/signin/?service_entity=urn:service-entity:psn&response_type=code&client_id=ba495a24-818c-472b-b12d-ff231c1b5745&redirect_uri=https://remoteplay.dl.playstation.net/remoteplay/redirect&scope=psn:clientapp&request_locale=en_US&ui=pr&service_logo=ps&layout_type=popup&smcid=remoteplay&PlatformPrivacyWs1=exempt&error=login_required&error_code=4165&error_description=User+is+not+authenticated#/signin?entry=%2Fsignin';
+
+const logoIcon = nativeImage.createFromPath('./assets/images/logo.png');
 
 let mainWindow : BrowserWindow = null;
 let loginWindow : BrowserWindow = null;
@@ -78,12 +80,17 @@ function showMessageAndDie(message: string, detail?: string) : void
 function spawnLoginWindow() : void
 {
 	loginWindow = new BrowserWindow({
-		width: 590,
-		height: 850,
+		width: 414,
+		height: 743,
+		minWidth: 414,
+		minHeight: 763,
+		icon: logoIcon,
 		webPreferences: {
 			nodeIntegration: false
 		}
 	});
+
+	loginWindow.setMenu(null);
 
 	loginWindow.on('closed', () => {
 		loginWindow = null;
@@ -142,11 +149,13 @@ function spawnLoginWindow() : void
 function spawnMainWindow() : void
 {
 	mainWindow = new BrowserWindow({
-		width: 490,
-		height: 450,
-		minWidth: 490,
-		minHeight: 450,
+		width: 512,
+		height: 512,
+		minWidth: 512,
+		minHeight: 512,
 		show: false,
+		icon: logoIcon,
+		backgroundColor: '#23272a',
 		webPreferences: {
 			nodeIntegration: true
 		},
@@ -157,7 +166,8 @@ function spawnMainWindow() : void
 
 	mainWindow.loadFile('./app.html');
 
-	mainWindow.webContents.openDevTools();
+	// Hide devtools by default, use ctrl-shift-i if needed
+	// MainWindow.webContents.openDevTools();
 
 	mainWindow.webContents.on('did-finish-load', () => {
 		// Init this here just in case the initial richPresenceLoop fails and needs to call clearInterval.
