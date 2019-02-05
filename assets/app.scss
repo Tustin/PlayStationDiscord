@@ -123,6 +123,9 @@ body {
                 grid-column: 1;
                 width: 200px;
                 height: auto;
+                pointer-events: none;
+                user-select: none;
+                user-drag: none; 
                 box-shadow: $boxshadow-1;
                 transition: $boxshadow-transition;
             }

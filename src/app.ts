@@ -187,23 +187,25 @@ function spawnMainWindow() : void
 		function richPresenceLoop() : void
 		{
 			fetchProfile().then((profile) => {
-				if (profile.primaryOnlineStatus !== 'online' && discordController.running())
+				if (profile.primaryOnlineStatus !== 'online')
 				{
-					discordController.stop();
+					if (discordController.running())
+					{
+						discordController.stop();
+						log.info('DiscordController stopped because the user is not online');
+					}
 
 					// Just update the form like this so we don't update rich presence.
 					mainWindow.webContents.send('presence-data', {
 						details: 'Offline'
 					});
-
-					log.info('DiscordController stopped because the user is not online');
 				}
 				else if (profile.primaryOnlineStatus === 'online')
 				{
 					let discordRichPresenceData : IDiscordPresenceModel;
 					let discordRichPresenceOptionsData : IDiscordPresenceUpdateOptions;
 
-					if (!discordController.running())
+					if (!discordController.running() && store.get('presenceEnabled', true))
 					{
 						discordController = new DiscordController(ps4ClientId);
 						log.info('Created new DiscordController instance');
@@ -385,6 +387,33 @@ eventEmitter.on('logged-in', () => {
 			eventEmitter.emit('token-refresh-failed');
 		});
 	}, parseInt(store.get('tokens.expires_in'), 10) * 1000);
+});
+
+ipcMain.on('toggle-presence', () => {
+	const newValue = !store.get('presenceEnabled');
+	store.set('presenceEnabled', newValue);
+
+	if (!newValue)
+	{
+		discordController.stop();
+	}
+});
+
+ipcMain.on('signout', () => {
+	dialog.showMessageBox(null, {
+		type: 'question',
+		title: 'PlayStationDiscord Alert',
+		buttons: ['Yes', 'No'],
+		defaultId: 0,
+		message: 'Are you sure you want to sign out?',
+	}, (response) => {
+		if (response === 0)
+		{
+			spawnLoginWindow();
+			store.clear();
+			mainWindow.close();
+		}
+	});
 });
 
 app.on('ready', () => {
