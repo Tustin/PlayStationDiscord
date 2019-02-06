@@ -20,6 +20,8 @@ button {
 
     &.ripple:hover {
         background: $blurple-hover radial-gradient(circle, transparent 1%, $blurple-hover 1%) center/15000%;
+        transition: all 0.35s cubic-bezier(0.25, 0.25, 0.315, 1.35);
+        box-shadow: rgba(0, 0, 0, 0.5) 0px 2px 6px 0px;
     }
 
     &.ripple:active {
