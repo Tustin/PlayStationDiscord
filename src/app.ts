@@ -369,11 +369,12 @@ function refreshTokenRequestData() : string
 }
 
 eventEmitter.on('logged-in', () => {
-	const tokenRefreshTimer = setInterval(() => {
+	const refreshTokens = () => {
 		const requestData = refreshTokenRequestData();
 
 		login(requestData).then((responseData) => {
 			log.info('Refreshed PSN OAuth tokens');
+			setTimeout(refreshTokens, parseInt(store.get('tokens.expires_in'), 10) * 1000);
 		})
 		.catch((err) => {
 			// We should probably try this multiple times if it fails, but I can't think of many reasons why it would.
@@ -383,10 +384,11 @@ eventEmitter.on('logged-in', () => {
 				'Sorry, an error occurred when trying to refresh your account tokens. Please restart the program.'
 			);
 
-			clearInterval(tokenRefreshTimer);
 			eventEmitter.emit('token-refresh-failed');
 		});
-	}, parseInt(store.get('tokens.expires_in'), 10) * 1000);
+	};
+
+	setTimeout(refreshTokens, parseInt(store.get('tokens.expires_in'), 10) * 1000);
 });
 
 ipcMain.on('toggle-presence', () => {
