@@ -3,11 +3,53 @@
   "version": "1.0.0",
   "description": "Discord Rich Presence for PlayStation consoles.",
   "main": "./dist/app.js",
+  "build": {
+    "appId": "com.playstationdiscord.app",
+    "win": {
+      "target": "nsis-web",
+      "icon": "./build/icons/win/icon.ico",
+      "publisherName": "Tustin"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "./build/icons/mac/icon.icns"
+    },
+    "directories": {
+      "output": "./build/release/${os}${arch}"
+    },
+    "files": [
+      "node_modules/**/*",
+      "dist/**/*",
+      "package.json"
+    ],
+    "nsisWeb": {
+      "differentialPackage": true,
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": true,
+      "createDesktopShortcut": true,
+      "allowElevation": true,
+      "shortcutName": "PlayStationDiscord",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "./build/icons/win/icon.ico",
+      "uninstallerIcon": "./build/icons/win/icon.ico",
+      "installerHeaderIcon": "./build/icons/win/icon.ico",
+      "uninstallDisplayName": "PlayStationDiscord ${version}",
+      "artifactName": "PlayStationDiscord ${version} Setup.${ext}"
+    },
+    "publish": {
+      "provider": "github",
+      "useMultipleRangeRequest": false
+    }
+  },
   "scripts": {
     "lint": "tslint --project .",
-    "build": "tsc && sass ./assets/app.scss ./assets/app.css --style=compressed --no-source-map",
+    "compile": "tsc && sass ./assets/app.scss ./assets/app.css --style=compressed --no-source-map",
     "watch": "tsc -w",
-    "start": "npm run lint && npm run build && electron ."
+    "start": "npm run lint && npm run compile && electron .",
+    "build-icons": "electron-icon-maker -i ./assets/images/logo.png -o ./build/",
+    "build-win": "npm run compile && npm run build-icons && electron-builder build --windows",
+    "build-mac": "npm run compile && npm run build-icons && electron-builder build --mac"
   },
   "repository": {
     "type": "git",
@@ -40,6 +82,8 @@
     "@types/electron-store": "^1.3.0",
     "@types/query-string": "^6.2.0",
     "electron": "^4.0.4",
+    "electron-builder": "^20.38.5",
+    "electron-icon-maker": "^0.0.4",
     "sass": "^1.16.1",
     "tslint": "^5.12.1",
     "typescript": "^3.2.4"
