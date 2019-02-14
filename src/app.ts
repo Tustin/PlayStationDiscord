@@ -10,6 +10,8 @@ import https = require('https');
 import util = require('util');
 import log = require('electron-log');
 import events = require('events');
+import url = require('url');
+import path = require('path');
 
 const supportedGames = require('./SupportedGames');
 
@@ -103,11 +105,11 @@ function spawnLoginWindow() : void
 	loginWindow.loadURL(sonyLoginUrl);
 
 	loginWindow.webContents.on('did-finish-load', () => {
-		const url : string = loginWindow.webContents.getURL();
+		const browserUrl : string = loginWindow.webContents.getURL();
 
-		if (url.startsWith('https://remoteplay.dl.playstation.net/remoteplay/redirect'))
+		if (browserUrl.startsWith('https://remoteplay.dl.playstation.net/remoteplay/redirect'))
 		{
-			const query : string = queryString.extract(url);
+			const query : string = queryString.extract(browserUrl);
 			const items : any = queryString.parse(query);
 
 			if (!items.code)
@@ -168,10 +170,11 @@ function spawnMainWindow() : void
 
 	discordController = new DiscordController(ps4ClientId);
 
-	mainWindow.loadFile('./app.html');
-
-	// Hide devtools by default, use ctrl-shift-i if needed
-	// MainWindow.webContents.openDevTools();
+	mainWindow.loadURL(url.format({
+		pathname: path.join(__dirname, 'app.html'),
+		protocol: 'file:',
+		slashes: true
+	}));
 
 	mainWindow.webContents.on('did-finish-load', () => {
 		// Init this here just in case the initial richPresenceLoop fails and needs to call clearInterval.

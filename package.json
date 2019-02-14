@@ -1,5 +1,5 @@
 {
-  "name": "playstation-discord",
+  "name": "PlayStationDiscord",
   "version": "1.0.0",
   "description": "Discord Rich Presence for PlayStation consoles.",
   "main": "./dist/app.js",
@@ -44,7 +44,7 @@
   },
   "scripts": {
     "lint": "tslint --project .",
-    "compile": "tsc && sass ./assets/app.scss ./assets/app.css --style=compressed --no-source-map",
+    "compile": "tsc && sass ./assets/app.scss ./dist/app.css --style=compressed --no-source-map",
     "watch": "tsc -w",
     "start": "npm run lint && npm run compile && electron .",
     "build-icons": "electron-icon-maker -i ./assets/images/logo.png -o ./build/",
