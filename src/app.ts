@@ -54,7 +54,6 @@ function login(data: string) : Promise<IOAuthTokenResponseModel>
 				else
 				{
 					store.set('tokens', info);
-					eventEmitter.emit('logged-in');
 					resolve(info);
 				}
 			});
@@ -132,6 +131,7 @@ function spawnLoginWindow() : void
 			login(data).then((tokenData) =>
 			{
 				log.info('Saved oauth tokens');
+				eventEmitter.emit('logged-in');
 
 				spawnMainWindow();
 
@@ -426,6 +426,7 @@ app.on('ready', () => {
 
 		login(requestData).then((responseData) => {
 			log.info('Updated PSN OAuth tokens');
+			eventEmitter.emit('logged-in');
 
 			spawnMainWindow();
 		}).catch((err) => {
