@@ -1,5 +1,6 @@
 node_modules/
-dist/
+dist/*
+!dist/app.html
 build/
 *.css
 *.log
