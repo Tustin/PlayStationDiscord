@@ -4,6 +4,8 @@ export const psVitaClientId : string 	= '493957159323828259';
 
 let discordClient : any;
 
+import { dialog } from 'electron';
+import log = require('electron-log');
 import { IDiscordPresenceModel, IDiscordPresenceUpdateOptions } from './Model/DiscordPresenceModel';
 
 interface IDiscordPresenceDefaultDataModel
@@ -35,6 +37,18 @@ export class DiscordController
 		discordClient = require('discord-rich-presence')(clientId);
 
 		this._running = true;
+
+		discordClient.on('error', (err: any) => {
+			log.error('An error occurred while communicating with Discord', err);
+			dialog.showMessageBox(null, {
+				type: 'error',
+				title: 'PlayStationDiscord Error',
+				message: 'An error occurred while communicating with Discord',
+				detail: err.toString()
+			});
+
+			this._running = false;
+		});
 	}
 
 	public running() : boolean
