@@ -3,7 +3,7 @@ import axios from 'axios';
 import events = require('events');
 const packageJson = require('../package.json');
 import log = require('electron-log');
-import { fdatasyncSync, rename } from 'fs';
+import asar from './Asar/Asar';
 const path = require('path');
 const appPath = app.getAppPath()  + '/';
 const appPathFolder = appPath + '../';
@@ -12,7 +12,6 @@ const currentAsarFile = appPathFolder + 'app.farts';
 const fs = require('fs');
 const blobObject = require('blob');
 const progress = require('progress-stream');
-const asar = require('asar');
 const rimraf = require('rimraf');
 
 const username = 'Tustin';
@@ -74,40 +73,13 @@ eventEmitter.on('update-available', (info) => {
 	});
 
 	streamWriter.on('finish', () => {
-		const out = asar.extractAll(currentAsarFile, extractedAsarFolder);
-
-		if (out.length <= 0)
-		{
-			eventEmitter.emit('update-error', new Error('Failed extracting .asar file'));
-			log.error('Failed extracting .asar file', out);
-
-			return;
-		}
-
-		rimraf(appPath, (err: any) => {
-			if (err)
-			{
-				eventEmitter.emit('update-error', new Error('Failed removing old app contents'));
-				log.error('Failed removing old app contents', err);
-
-				return;
-			}
-
-			fs.rename(extractedAsarFolder, appPath, (renameErr: any) => {
-				if (renameErr)
-				{
-					eventEmitter.emit('update-error', new Error('Failed copying over new app contents'));
-					log.error('Failed removing old app contents', renameErr);
-
-					// Throw up a dialog here since this is a bad error.
-					dialog.showErrorBox('A catastrophic error occurred during the update process.', 'While trying to copy over the new app contents, an error occurred which made this process fail. As a result, you might need to redownload the program again.');
-
-					return;
-				}
-
-				eventEmitter.emit('update-downloaded');
+		asar(currentAsarFile)
+		.then((archive) => {
+			archive.extractAll('test').then(() => {
+				console.log('wrote files!');
+			}).catch((err) => {
+				console.error(err);
 			});
-
 		});
 	});
 
