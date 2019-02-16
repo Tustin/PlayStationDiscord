@@ -3,6 +3,7 @@ import { IPresenceModel, IProfileModel } from './Model/ProfileModel';
 import { IOAuthTokenCodeRequestModel, IOAuthTokenRefreshRequestModel, IOAuthTokenResponseModel, } from './Model/AuthenticationModel';
 import { DiscordController, ps4ClientId, ps3ClientId, psVitaClientId } from './DiscordController';
 import { IDiscordPresenceModel, IDiscordPresenceUpdateOptions } from './Model/DiscordPresenceModel';
+import autoUpdater = require('./AutoUpdater');
 
 import _store = require('electron-store');
 import queryString = require('query-string');
@@ -177,6 +178,8 @@ function spawnMainWindow() : void
 	}));
 
 	mainWindow.webContents.on('did-finish-load', () => {
+		autoUpdater.checkForUpdates();
+
 		// Init this here just in case the initial richPresenceLoop fails and needs to call clearInterval.
 		let updateRichPresenceLoop : NodeJS.Timeout;
 		let retries : number;
@@ -421,8 +424,70 @@ ipcMain.on('signout', () => {
 	});
 });
 
-app.on('ready', () => {
+autoUpdater.on('update-error', (error) => {
+	sendUpdateStatus({
+		message: 'Update failed!',
+		icon: 'error'
+	});
+});
 
+autoUpdater.on('download-progress', (info) => {
+	sendUpdateStatus({
+		message: `Downloading update ${info.percent}%`,
+	});
+});
+
+autoUpdater.on('checking-for-update', () => {
+	sendUpdateStatus({
+		message: 'Checking for new update...',
+		icon: 'bars'
+	});
+});
+
+autoUpdater.on('update-available', (info) => {
+	sendUpdateStatus({
+		message: 'New update available',
+		icons: 'success'
+	});
+});
+
+autoUpdater.on('update-not-available', (info) => {
+	sendUpdateStatus({
+		message: 'Up to date!',
+		fade: true,
+		icon: 'success'
+	});
+});
+
+autoUpdater.on('update-downloaded', () => {
+	sendUpdateStatus({
+		message: 'Update downloaded. Please <b id="install">click here</b> to install.',
+		icon: 'success'
+	});
+});
+
+ipcMain.on('update-install', () => {
+	app.relaunch();
+	app.exit();
+});
+
+function sendUpdateStatus(data: any) : void
+{
+	if (mainWindow)
+	{
+		mainWindow.webContents.send('update-status', data);
+	}
+}
+
+function toggleUpdateInfo(value: boolean) : void
+{
+	if (mainWindow)
+	{
+		mainWindow.webContents.send('update-toggle', value);
+	}
+}
+
+app.on('ready', () => {
 	if (store.has('tokens'))
 	{
 		const requestData = refreshTokenRequestData();

@@ -1,5 +1,6 @@
 @import "_theme";
 @import "_button";
+@import "_checkmark";
 
 * {
     margin: 0;
@@ -10,7 +11,7 @@
 
 body {
     min-height: 100vh;
-    background: url("./images/background.png") no-repeat;
+    background: url("../assets/images/background.png") repeat-y;
     background-size: 100%;
     color: $text-primary;
 
@@ -100,6 +101,43 @@ body {
         width: 100%;
         margin-top: 32px;
         justify-content: center;
+
+        #update-info {
+            display: grid;
+            grid-template-columns: 32px auto 138px;
+            position: fixed;
+            width: 100%;
+            height: 32px;
+            line-height: 32px;
+            z-index: 69;
+            background-color: $update-bar-background;
+            -webkit-user-select: none;
+
+            &.fade {
+                -webkit-transition: opacity 5s ease-in-out;
+                opacity: 0;
+            }
+
+            #icon {
+                display: flex;
+                grid-row: 1;
+                grid-column: 1;
+                align-items: center;
+                justify-content: center;
+                -webkit-app-region: no-drag;
+            }
+
+            #text {
+                grid-row: 1;
+                grid-column: 2;
+                font-size: 12px;
+                color: #fff;
+
+                #install {
+                    cursor: pointer;
+                }
+            }
+        }
 
         .playstation-info {
             display: grid;
