@@ -75,8 +75,32 @@ eventEmitter.on('update-available', (info) => {
 	streamWriter.on('finish', () => {
 		asar(currentAsarFile)
 		.then((archive) => {
-			archive.extractAll('test').then(() => {
-				console.log('wrote files!');
+			archive.extractAll(extractedAsarFolder)
+			.then(() => {
+				rimraf(appPath, (err: any) => {
+					if (err)
+					{
+						eventEmitter.emit('update-error', new Error('Failed removing old app contents'));
+						log.error('Failed removing old app contents', err);
+
+						return;
+					}
+
+					fs.rename(extractedAsarFolder, appPath, (renameErr: any) => {
+						if (renameErr)
+						{
+							eventEmitter.emit('update-error', new Error('Failed copying over new app contents'));
+							log.error('Failed removing old app contents', renameErr);
+
+							 // Throw up a dialog here since this is a bad error.
+							dialog.showErrorBox('A catastrophic error occurred during the update process.', 'While trying to copy over the new app contents, an error occurred which made this process fail. As a result, you might need to redownload the program again.');
+
+							return;
+						}
+
+						eventEmitter.emit('update-downloaded');
+					});
+				});
 			}).catch((err) => {
 				console.error(err);
 			});

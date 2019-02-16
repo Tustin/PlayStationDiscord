@@ -37,7 +37,7 @@ export class AsarArchive
 	public readFile(fileName: string, info: any) : Promise<Buffer>
 	{
 		return new Promise((resolve, reject) => {
-			const buffer = new Buffer(info.size);
+			const buffer = Buffer.alloc(info.size);
 
 			if (info.size <= 0)
 			{
@@ -91,15 +91,28 @@ export class AsarArchive
 							return reject(rmrfError);
 						}
 
-						return this.writeFiles(destination, files);
+						this.writeFiles(destination, files)
+						.then(() => {
+							return resolve();
+						})
+						.catch(() => {
+							return reject();
+						});
 					});
 				}
 				else
 				{
-					return this.writeFiles(destination, files);
+					this.writeFiles(destination, files)
+					.then(() => {
+						return resolve();
+					})
+					.catch(() => {
+						return reject();
+					});
 				}
-
-				return resolve();
+			})
+			.catch((err) => {
+				return reject(err);
 			});
 		});
 	}
@@ -126,6 +139,8 @@ export class AsarArchive
 							{
 								return reject(err);
 							}
+
+							return resolve();
 						});
 					}
 					else if (file.link)
@@ -140,6 +155,8 @@ export class AsarArchive
 								{
 									return reject(symlinkErr);
 								}
+
+								return resolve();
 							});
 						});
 					}
@@ -153,16 +170,17 @@ export class AsarArchive
 									return reject('Failed writing file from fileBuffer ' + writeFileErr);
 								}
 
-								console.log('wrote' , destFileName);
+								// Dconsole.log('wrote' , destFileName);
 							});
 						})
 						.catch((readFileErr: any) => {
 							return reject('Failed reading file ' + readFileErr);
+						})
+						.then(() => {
+							return resolve();
 						});
 					}
 				});
-
-				return resolve();
 			});
 		});
 	}
@@ -177,7 +195,7 @@ function readArchiveHeader(archive: string) : Promise<any>
 				return reject(new Error('Failed opening asar archive'));
 			}
 
-			const headerSizeBuffer = new Buffer(8);
+			const headerSizeBuffer = Buffer.alloc(8);
 
 			fs.read(fd, headerSizeBuffer, 0, 8, null, (headerReadErr, headerBytesRead) => {
 				if (headerReadErr)
@@ -186,7 +204,7 @@ function readArchiveHeader(archive: string) : Promise<any>
 				}
 				const size = pickle.createFromBuffer(headerSizeBuffer).createIterator().readUInt32();
 
-				const headerBuffer = new Buffer(size);
+				const headerBuffer = Buffer.alloc(size);
 
 				fs.read(fd, headerBuffer, 0, size, null, (pickleReadErr, pickleReadBytes) => {
 					if (pickleReadErr)
