@@ -117,72 +117,71 @@ export class AsarArchive
 		});
 	}
 
-	private writeFiles(destination: string, files: string[]) : Promise<void>
+	private writeFile(destination: string, fileName: string) : Promise<void>
 	{
+		const followLinks = process.platform === 'win32';
+
 		return new Promise((resolve, reject) => {
-			const followLinks = process.platform === 'win32';
-
-			fs.mkdir(destination, (err) => {
-				if (err)
-				{
-					// Rreturn reject(err);
-				}
-
-				files.map((fileName) => {
-					fileName = fileName.substr(1);
-					const destFileName = path.join(destination, fileName);
-					const file = this.getFile(fileName, followLinks);
-					if (file.files)
+			const destFileName = path.join(destination, fileName);
+			const file = this.getFile(fileName, followLinks);
+			if (file.files)
+			{
+				fs.mkdir(destFileName, (mkdirErr) => {
+					if (mkdirErr)
 					{
-						fs.mkdir(destFileName, (mkdirErr) => {
-							if (mkdirErr)
-							{
-								return reject(err);
-							}
-
-							return resolve();
-						});
+						return reject(mkdirErr);
 					}
-					else if (file.link)
-					{
-						const linkSrcPath = path.dirname(path.join(destination, file.link));
-						const linkDestPath = path.dirname(destFileName);
-						const relativePath = path.relative(linkDestPath, linkSrcPath);
-						fs.unlink(destFileName, (unlinkErr) => {
-							const linkTo = path.join(relativePath, path.basename(file.link));
-							fs.symlink(linkTo, destFileName, (symlinkErr) => {
-								if (symlinkErr)
-								{
-									return reject(symlinkErr);
-								}
 
-								return resolve();
-							});
-						});
-					}
-					else
-					{
-						this.readFile(fileName, file)
-						.then((fileBuffer: Buffer) => {
-							fs.writeFile(destFileName, fileBuffer, (writeFileErr: NodeJS.ErrnoException) => {
-								if (writeFileErr)
-								{
-									return reject('Failed writing file from fileBuffer ' + writeFileErr);
-								}
-
-								// Dconsole.log('wrote' , destFileName);
-							});
-						})
-						.catch((readFileErr: any) => {
-							return reject('Failed reading file ' + readFileErr);
-						})
-						.then(() => {
-							return resolve();
-						});
-					}
+					return resolve();
 				});
+			}
+			else if (file.link)
+			{
+				const linkSrcPath = path.dirname(path.join(destination, file.link));
+				const linkDestPath = path.dirname(destFileName);
+				const relativePath = path.relative(linkDestPath, linkSrcPath);
+				fs.unlink(destFileName, (unlinkErr) => {
+					const linkTo = path.join(relativePath, path.basename(file.link));
+					fs.symlink(linkTo, destFileName, (symlinkErr) => {
+						if (symlinkErr)
+						{
+							return reject(symlinkErr);
+						}
+
+						return resolve();
+					});
+				});
+			}
+			else
+			{
+				this.readFile(fileName, file)
+				.then((fileBuffer: Buffer) => {
+					fs.writeFile(destFileName, fileBuffer, (writeFileErr: NodeJS.ErrnoException) => {
+						if (writeFileErr)
+						{
+							return reject('Failed writing file from fileBuffer ' + writeFileErr);
+						}
+					});
+				})
+				.catch((readFileErr: any) => {
+					return reject('Failed reading file ' + readFileErr);
+				});
+			}
+		});
+	}
+
+	private writeFiles(destination: string, files: string[]) : Promise<any>
+	{
+		const promises : any[] = [];
+
+		fs.mkdir(destination, (err) => {
+			files.map((fileName) => {
+				fileName = fileName.substr(1);
+				promises.push(this.writeFile(destination, fileName));
 			});
 		});
+
+		return Promise.all(promises);
 	}
 }
 
