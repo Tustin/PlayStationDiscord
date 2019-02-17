@@ -6,7 +6,7 @@ import log = require('electron-log');
 import asar from './Asar/Asar';
 const path = require('path');
 const appPath = app.getAppPath()  + '/';
-const appPathFolder = appPath + '../';
+const appPathFolder = path.resolve(appPath, '../');
 const extractedAsarFolder = appPathFolder + 'update';
 const currentAsarFile = appPathFolder + 'app.farts';
 const fs = require('fs');

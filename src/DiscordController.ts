@@ -8,6 +8,8 @@ import { dialog } from 'electron';
 import log = require('electron-log');
 import { IDiscordPresenceModel, IDiscordPresenceUpdateOptions } from './Model/DiscordPresenceModel';
 
+const packageJson = require('../package.json');
+
 interface IDiscordPresenceDefaultDataModel
 {
   	instance : boolean;
@@ -27,7 +29,7 @@ export class DiscordController
 		largeImageKey: 'ps4_main',
 		largeImageText: 'PlayStation 4',
 		smallImageKey: 'ps4_main',
-		smallImageText: 'PlayStationDiscord'
+		smallImageText: 'PlayStationDiscord ' + (packageJson.version || '')
 	};
 
 	constructor(clientId: string)
