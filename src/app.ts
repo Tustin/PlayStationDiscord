@@ -3,7 +3,7 @@ import { IPresenceModel, IProfileModel } from './Model/ProfileModel';
 import { IOAuthTokenCodeRequestModel, IOAuthTokenRefreshRequestModel, IOAuthTokenResponseModel, } from './Model/AuthenticationModel';
 import { DiscordController, ps4ClientId, ps3ClientId, psVitaClientId } from './DiscordController';
 import { IDiscordPresenceModel, IDiscordPresenceUpdateOptions } from './Model/DiscordPresenceModel';
-import autoUpdater = require('./AutoUpdater');
+import { autoUpdater } from 'electron-updater';
 
 import _store = require('electron-store');
 import queryString = require('query-string');
@@ -13,6 +13,7 @@ import log = require('electron-log');
 import events = require('events');
 import url = require('url');
 import path = require('path');
+import isDev = require('electron-is-dev');
 
 const supportedGames = require('./SupportedGames');
 
@@ -28,6 +29,14 @@ let loginWindow : BrowserWindow = null;
 
 let discordController : DiscordController;
 let previousPresence : IPresenceModel;
+
+autoUpdater.autoDownload = false;
+
+const instanceLock = app.requestSingleInstanceLock();
+if (!instanceLock)
+{
+	app.quit();
+}
 
 function login(data: string) : Promise<IOAuthTokenResponseModel>
 {
@@ -178,7 +187,14 @@ function spawnMainWindow() : void
 	}));
 
 	mainWindow.webContents.on('did-finish-load', () => {
-		autoUpdater.checkForUpdates();
+		if (!isDev)
+		{
+			autoUpdater.checkForUpdates();
+		}
+		else
+		{
+			log.debug('Skipping update check because app is running in dev mode');
+		}
 
 		// Init this here just in case the initial richPresenceLoop fails and needs to call clearInterval.
 		let updateRichPresenceLoop : NodeJS.Timeout;
@@ -424,16 +440,9 @@ ipcMain.on('signout', () => {
 	});
 });
 
-autoUpdater.on('update-error', (error) => {
+autoUpdater.on('download-progress', ({ percent }) => {
 	sendUpdateStatus({
-		message: 'Update failed ' + (error.toString() || '!'),
-		icon: 'error'
-	});
-});
-
-autoUpdater.on('download-progress', (info) => {
-	sendUpdateStatus({
-		message: `Downloading update ${info.percent}%`,
+		message: `Downloading update ${Math.round(percent)}%`,
 	});
 });
 
@@ -449,6 +458,8 @@ autoUpdater.on('update-available', (info) => {
 		message: 'New update available',
 		icons: 'success'
 	});
+
+	autoUpdater.downloadUpdate();
 });
 
 autoUpdater.on('update-not-available', (info) => {
@@ -461,14 +472,22 @@ autoUpdater.on('update-not-available', (info) => {
 
 autoUpdater.on('update-downloaded', () => {
 	sendUpdateStatus({
-		message: 'Update downloaded. Please <u id="install">click here</u> to install.',
+		message: 'Update downloaded. Please <u id="install">click here</u> to install - <u id="notes">Release Notes</u>',
 		icon: 'success'
 	});
 });
 
+autoUpdater.on('error', (err) => {
+	log.error(err);
+
+	sendUpdateStatus({
+		message: 'Auto update failed!',
+		icon: 'error'
+	});
+});
+
 ipcMain.on('update-install', () => {
-	app.relaunch();
-	app.exit();
+	autoUpdater.quitAndInstall(true, true);
 });
 
 function sendUpdateStatus(data: any) : void

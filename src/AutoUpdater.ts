@@ -13,7 +13,6 @@ const appPathFolder = path.resolve(appPath, '../');
 const extractedAsarFolder = appPathFolder + 'update';
 const currentAsarFile = appPathFolder + 'app.farts';
 const fs = require('fs');
-const blobObject = require('blob');
 const progress = require('progress-stream');
 const rimraf = require('rimraf');
 
@@ -51,7 +50,6 @@ eventEmitter.on('update-available', (info) => {
 	}
 
 	const downloadUrl = asarAsset.browser_download_url;
-	console.log(appPathFolder);
 	const streamWriter = fs.createWriteStream(currentAsarFile);
 	const asarSize = asarAsset.size;
 	const progressPipe = progress({
