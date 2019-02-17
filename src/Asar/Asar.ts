@@ -159,12 +159,12 @@ export class AsarArchive
 					fs.writeFile(destFileName, fileBuffer, (writeFileErr: NodeJS.ErrnoException) => {
 						if (writeFileErr)
 						{
-							return reject('Failed writing file from fileBuffer ' + writeFileErr);
+							return reject(writeFileErr);
 						}
 					});
 				})
 				.catch((readFileErr: any) => {
-					return reject('Failed reading file ' + readFileErr);
+					return reject(readFileErr);
 				});
 			}
 		});
@@ -191,7 +191,7 @@ function readArchiveHeader(archive: string) : Promise<any>
 		fs.open(archive, 'r', (err, fd) => {
 			if (err)
 			{
-				return reject(new Error('Failed opening asar archive'));
+				return reject(err);
 			}
 
 			const headerSizeBuffer = Buffer.alloc(8);
@@ -199,7 +199,7 @@ function readArchiveHeader(archive: string) : Promise<any>
 			fs.read(fd, headerSizeBuffer, 0, 8, null, (headerReadErr, headerBytesRead) => {
 				if (headerReadErr)
 				{
-					return reject(new Error('Failed reading asar archive header'));
+					return reject(headerReadErr);
 				}
 				const size = pickle.createFromBuffer(headerSizeBuffer).createIterator().readUInt32();
 
@@ -208,7 +208,7 @@ function readArchiveHeader(archive: string) : Promise<any>
 				fs.read(fd, headerBuffer, 0, size, null, (pickleReadErr, pickleReadBytes) => {
 					if (pickleReadErr)
 					{
-						return reject(new Error('Failed reading asar archive header (pickle-read)'));
+						return reject(pickleReadErr);
 					}
 
 					const header = pickle.createFromBuffer(headerBuffer).createIterator().readString();

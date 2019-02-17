@@ -184,7 +184,7 @@ export default class FileSystem
 					fs.lstat(newPath, (lstatErr: any, stat: fs.Stats) => {
 						if (lstatErr)
 						{
-							throw new Error('lstat failed on asar archive');
+							throw new Error(lstatErr);
 						}
 
 						file.transformed = {

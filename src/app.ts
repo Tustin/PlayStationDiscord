@@ -426,7 +426,7 @@ ipcMain.on('signout', () => {
 
 autoUpdater.on('update-error', (error) => {
 	sendUpdateStatus({
-		message: 'Update failed!',
+		message: 'Update failed ' + (error.toString() || '!'),
 		icon: 'error'
 	});
 });
@@ -461,7 +461,7 @@ autoUpdater.on('update-not-available', (info) => {
 
 autoUpdater.on('update-downloaded', () => {
 	sendUpdateStatus({
-		message: 'Update downloaded. Please <b id="install">click here</b> to install.',
+		message: 'Update downloaded. Please <u id="install">click here</u> to install.',
 		icon: 'success'
 	});
 });

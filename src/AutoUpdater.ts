@@ -1,9 +1,12 @@
 import { app, dialog } from 'electron';
 import axios from 'axios';
 import events = require('events');
-const packageJson = require('../package.json');
-import log = require('electron-log');
+import * as compareVersions from 'compare-versions';
 import asar from './Asar/Asar';
+
+import log = require('electron-log');
+
+const packageJson = require('../package.json');
 const path = require('path');
 const appPath = app.getAppPath()  + '/';
 const appPathFolder = path.resolve(appPath, '../');
@@ -42,6 +45,7 @@ eventEmitter.on('update-available', (info) => {
 	if (asarAsset === undefined)
 	{
 		eventEmitter.emit('update-error', new Error('Update available but could not find .asar file.'));
+		log.error('Update available but could not find .asar file on GitHub.');
 
 		return;
 	}
@@ -63,6 +67,7 @@ eventEmitter.on('update-available', (info) => {
 			.pipe(streamWriter);
 		}).catch((err) => {
 			eventEmitter.emit('update-error', new Error('Failed downloading .asar file'));
+			log.error('Failed download .asar archive', err);
 		});
 
 		progressPipe.on('progress', (p: any) => {
@@ -93,22 +98,28 @@ eventEmitter.on('update-available', (info) => {
 							log.error('Failed removing old app contents', renameErr);
 
 							 // Throw up a dialog here since this is a bad error.
-							dialog.showErrorBox('A catastrophic error occurred during the update process.', 'While trying to copy over the new app contents, an error occurred which made this process fail. As a result, you might need to redownload the program again.');
+							dialog.showErrorBox('A catastrophic error occurred during the update process.', 'While trying to copy over the new app contents, an error occurred which made this process fail. As a result, you might need to download the program again.');
 
 							return;
 						}
 
 						eventEmitter.emit('update-downloaded');
+
+						log.info('Update downloaded successfully');
 					});
 				});
 			}).catch((err) => {
-				console.error(err);
+				eventEmitter.emit('update-error', new Error('Failed extracting update files'));
+
+				log.error('Failed extracting update files from .asar archive', err);
 			});
 		});
 	});
 
 	streamWriter.on('error', (err: any) => {
-		eventEmitter.emit('update-error', new Error('Failed writing update to file ' + err));
+		eventEmitter.emit('update-error', new Error('Failed writing update to disk'));
+
+		log.error('Failed writing update to disk', err);
 	});
 });
 
@@ -120,17 +131,23 @@ export function checkForUpdates() : void
 
 	axios.get(releaseUrl, {
 		headers: {
-			'User-Agent': 'PlayStationDiscord'
+			'User-Agent': 'PlayStationDiscord ' + (packageJson.version || '')
 		}
-	}).then((response) => {
+	})
+	.then((response) => {
 		const responseBody = response.data;
-		if (responseBody.tag_name !== packageJson.version)
+		if (compareVersions(responseBody.tag_name, packageJson.version) === 1)
 		{
 			eventEmitter.emit('update-available', responseBody);
 		}
-		else
+		else if (compareVersions(responseBody.tag_name, packageJson.version) === 0)
 		{
 			eventEmitter.emit('update-not-available', responseBody);
 		}
-	}).catch((err) => eventEmitter.emit('update-error', err));
+	})
+	.catch((err) => {
+		eventEmitter.emit('update-error', new Error('Failed checking GitHub for updates'));
+
+		log.error('Failed checking GitHub for updates', err);
+	});
 }

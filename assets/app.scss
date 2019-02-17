@@ -131,10 +131,13 @@ body {
                 grid-row: 1;
                 grid-column: 2;
                 font-size: 12px;
-                color: #fff;
+                color: rgba(255, 255, 255, .7);
 
                 #install {
                     cursor: pointer;
+                    &:hover {
+                        color: #fff;
+                    }
                 }
             }
         }

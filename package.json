@@ -79,6 +79,7 @@
     "axios": "^0.18.0",
     "blob": "^0.0.5",
     "chromium-pickle-js": "^0.2.0",
+    "compare-versions": "^3.4.0",
     "cuint": "^0.2.2",
     "discord-rich-presence": "0.0.8",
     "electron-log": "^3.0.1",
