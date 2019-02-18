@@ -71,6 +71,10 @@ document.addEventListener('click', (event) => {
 	{
 		ipcRenderer.send('update-install');
 	}
+	else if (element.id === 'notes')
+	{
+		ipcRenderer.send('show-notes');
+	}
 });
 
 togglePresence.addEventListener('click', () => {

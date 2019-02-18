@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, nativeImage } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, nativeImage, shell } from 'electron';
 import { IPresenceModel, IProfileModel } from './Model/ProfileModel';
 import { IOAuthTokenCodeRequestModel, IOAuthTokenRefreshRequestModel, IOAuthTokenResponseModel, } from './Model/AuthenticationModel';
 import { DiscordController, ps4ClientId, ps3ClientId, psVitaClientId } from './DiscordController';
@@ -490,6 +490,10 @@ ipcMain.on('update-install', () => {
 	autoUpdater.quitAndInstall(true, true);
 });
 
+ipcMain.on('show-notes', () => {
+	shell.openExternal('https://github.com/Tustin/PlayStationDiscord/releases/latest');
+});
+
 function sendUpdateStatus(data: any) : void
 {
 	if (mainWindow)
@@ -505,6 +509,20 @@ function toggleUpdateInfo(value: boolean) : void
 		mainWindow.webContents.send('update-toggle', value);
 	}
 }
+
+app.on('second-instance', (event) => {
+	if (!mainWindow)
+	{
+		return;
+	}
+
+	if (mainWindow.isMinimized())
+	{
+		mainWindow.restore();
+	}
+
+	return mainWindow.focus();
+});
 
 app.on('ready', () => {
 	if (store.has('tokens'))
