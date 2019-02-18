@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, nativeImage, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, nativeImage, shell, Tray, Menu, Notification } from 'electron';
 import { IPresenceModel, IProfileModel } from './Model/ProfileModel';
 import { IOAuthTokenCodeRequestModel, IOAuthTokenRefreshRequestModel, IOAuthTokenResponseModel, } from './Model/AuthenticationModel';
 import { DiscordController, ps4ClientId, ps3ClientId, psVitaClientId } from './DiscordController';
@@ -21,7 +21,7 @@ const eventEmitter = new events.EventEmitter();
 
 const sonyLoginUrl : string = 'https://id.sonyentertainmentnetwork.com/signin/?service_entity=urn:service-entity:psn&response_type=code&client_id=ba495a24-818c-472b-b12d-ff231c1b5745&redirect_uri=https://remoteplay.dl.playstation.net/remoteplay/redirect&scope=psn:clientapp&request_locale=en_US&ui=pr&service_logo=ps&layout_type=popup&smcid=remoteplay&PlatformPrivacyWs1=exempt&error=login_required&error_code=4165&error_description=User+is+not+authenticated#/signin?entry=%2Fsignin';
 
-const logoIcon = nativeImage.createFromPath('./assets/images/logo.png');
+const logoIcon = nativeImage.createFromPath(path.join(__dirname, '../assets/images/logo.png'));
 
 let mainWindow : BrowserWindow = null;
 let loginWindow : BrowserWindow = null;
@@ -36,6 +36,8 @@ if (!instanceLock)
 {
 	app.quit();
 }
+
+app.setAppUserModelId(process.execPath);
 
 function login(data: string) : Promise<IOAuthTokenResponseModel>
 {
@@ -163,6 +165,24 @@ function spawnLoginWindow() : void
 
 function spawnMainWindow() : void
 {
+	const contextMenu = Menu.buildFromTemplate([
+		{
+			label: 'Show Application',
+			click:  () => mainWindow.show()
+		},
+		{
+			label: 'Quit',
+			click:  () => {
+				mainWindow.destroy();
+				app.quit();
+			}
+		}
+	]);
+
+	const tray = new Tray(logoIcon);
+
+	tray.setContextMenu(contextMenu);
+
 	mainWindow = new BrowserWindow({
 		width: 512,
 		height: 512,
@@ -174,7 +194,7 @@ function spawnMainWindow() : void
 		webPreferences: {
 			nodeIntegration: true
 		},
-		frame: false
+		frame: false,
 	});
 
 	discordController = new DiscordController(ps4ClientId);
@@ -334,6 +354,38 @@ function spawnMainWindow() : void
 
 	mainWindow.on('closed', () => {
 		mainWindow = null;
+	});
+
+	mainWindow.on('minimize', () => {
+		if (process.platform !== 'win32')
+		{
+			return;
+		}
+
+		mainWindow.hide();
+
+		if (Notification.isSupported())
+		{
+			const notification = new Notification({
+				title: 'Still Here!',
+				body: 'PlayStationDiscord is still running in the tray. You can restore it by double clicking the icon in the tray.',
+				icon: logoIcon
+			});
+
+			notification.show();
+		}
+		else
+		{
+			log.warn('Tray notification not shown because notifications aren\'t supported on this platform', process.platform);
+		}
+
+		tray.on('double-click', () => {
+			if (!mainWindow.isVisible())
+			{
+				mainWindow.show();
+				mainWindow.focus();
+			}
+		});
 	});
 }
 
@@ -524,7 +576,7 @@ function toggleUpdateInfo(value: boolean) : void
 	}
 }
 
-app.on('second-instance', (event) => {
+app.on('second-instance', () => {
 	if (!mainWindow)
 	{
 		return;
