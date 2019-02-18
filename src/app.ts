@@ -8,7 +8,6 @@ import { autoUpdater } from 'electron-updater';
 import _store = require('electron-store');
 import queryString = require('query-string');
 import https = require('https');
-import util = require('util');
 import log = require('electron-log');
 import events = require('events');
 import url = require('url');
@@ -459,7 +458,18 @@ autoUpdater.on('update-available', (info) => {
 		icons: 'success'
 	});
 
-	autoUpdater.downloadUpdate();
+	// Because macOS requires code-signing for auto updating, we'll just have them download the update manually.
+	if (process.platform === 'darwin')
+	{
+		sendUpdateStatus({
+			message: 'New update available. <u id="notes">Click here</u> to download!',
+			icons: 'success'
+		});
+	}
+	else
+	{
+		autoUpdater.downloadUpdate();
+	}
 });
 
 autoUpdater.on('update-not-available', (info) => {

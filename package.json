@@ -11,6 +11,7 @@
       "icon": "./build/icons/win/icon.ico"
     },
     "mac": {
+      "target": "dmg",
       "icon": "./build/icons/mac/icon.icns"
     },
     "directories": {
