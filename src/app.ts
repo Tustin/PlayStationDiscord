@@ -43,42 +43,26 @@ app.setAppUserModelId(process.execPath);
 function login(data: string) : Promise<IOAuthTokenResponseModel>
 {
 	return new Promise<IOAuthTokenResponseModel>((resolve, reject) => {
-		const options : any = {
+		axios.post('https://auth.api.sonyentertainmentnetwork.com/2.0/oauth/token', data, {
 			headers: {
 				'Authorization': 'Basic YmE0OTVhMjQtODE4Yy00NzJiLWIxMmQtZmYyMzFjMWI1NzQ1Om12YWlaa1JzQXNJMUlCa1k=',
-				'Content-Length': data.length,
 				'Content-Type': 'application/x-www-form-urlencoded'
-			},
-			hostname: 'auth.api.sonyentertainmentnetwork.com',
-			method: 'POST',
-			path: '/2.0/oauth/token',
-			port: 443,
-		};
+			}
+		})
+		.then((response) => {
+			const responseBody = response.data;
+			if (responseBody.error)
+			{
+				return reject(responseBody);
+			}
 
-		const request = https.request(options, (response) => {
-			response.setEncoding('utf8');
+			store.set('tokens', responseBody);
 
-			response.on('data', (body) => {
-				const info = JSON.parse(body);
-
-				if (info.error)
-				{
-					reject(info);
-				}
-				else
-				{
-					store.set('tokens', info);
-					resolve(info);
-				}
-			});
+			return resolve(responseBody);
+		})
+		.catch((err) => {
+			return reject(err);
 		});
-
-		request.on('error', (err) => {
-			reject(err);
-		});
-
-		request.write(data);
-		request.end();
 	});
 }
 
@@ -234,7 +218,7 @@ function spawnMainWindow() : void
 					if (discordController.running())
 					{
 						discordController.stop();
-						log.info('DiscordController stopped because the user is not online');
+						log.info('DiscordController stopped because the user is not online on PlayStation');
 					}
 
 					// Just update the form like this so we don't update rich presence.
@@ -395,38 +379,24 @@ function fetchProfile() : Promise<IProfileModel>
 	return new Promise<IProfileModel>((resolve, reject) => {
 		const accessToken = store.get('tokens.access_token');
 
-		const options = {
-			method: 'GET',
-			port: 443,
-			hostname: 'us-prof.np.community.playstation.net',
-			path: '/userProfile/v1/users/me/profile2?fields=onlineId,avatarUrls,plus,primaryOnlineStatus,presences(@titleInfo)&avatarSizes=m,xl&titleIconSize=s',
+		axios.get('https://us-prof.np.community.playstation.net/userProfile/v1/users/me/profile2?fields=onlineId,avatarUrls,plus,primaryOnlineStatus,presences(@titleInfo)&avatarSizes=m,xl&titleIconSize=s', {
 			headers: {
 				Authorization: `Bearer ${accessToken}`
 			}
-		};
+		})
+		.then((response) => {
+			const responseBody = response.data;
+			if (responseBody.error)
+			{
+				return reject(responseBody);
+			}
 
-		const request = https.request(options, (response) => {
-			response.setEncoding('utf8');
+			return resolve(responseBody.profile);
 
-			response.on('data', (body) => {
-				const info = JSON.parse(body);
-
-				if (info.error)
-				{
-					reject(body);
-				}
-				else
-				{
-					resolve(info.profile);
-				}
-			});
+		})
+		.catch((err) => {
+			return reject(err);
 		});
-
-		request.on('error', (err) => {
-			reject(err);
-		});
-
-		request.end();
 	});
 }
 
