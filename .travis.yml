@@ -38,4 +38,4 @@ before_cache:
 
 branches:
   only:
-    - rewrite
+    - master
