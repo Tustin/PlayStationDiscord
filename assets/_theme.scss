@@ -1,0 +1,32 @@
+@import "./fonts/open-sans";
+
+$font-stack: "Open Sans", "Roboto", sans-serif;
+$text-primary: rgba(255, 255, 255, 0.87);
+$text-secondary: rgba(255, 255, 255, 0.54);
+
+// Title bar
+$title-bar-background: #1a1a1a;
+$title-bar-control-hover: rgba(255, 255, 255, .2);
+$title-bar-control-close: #F44336;
+$title-bar-title-color: #fff;
+
+// Update bar
+$update-bar-background: #202020;
+
+// Whitespace
+$whitespace-primary: #333;
+$whitespace-secondary: #23272a;
+
+// Theme
+$blurple: #7289da;
+$blurple-hover: #667bc4;
+$blurple-active: #8095de;
+$red-btn: #F44336;
+
+// Shadows
+$boxshadow-1: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+$boxshadow-2: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+$boxshadow-3: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
+$boxshadow-4: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
+$boxshadow-5: 0 19px 38px rgba(0, 0, 0, 0.3), 0 15px 12px rgba(0, 0, 0, 0.22);
+$boxshadow-transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);

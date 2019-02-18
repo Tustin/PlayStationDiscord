@@ -1,0 +1,36 @@
+@import "_theme";
+
+button {
+    height: 45px;
+    cursor: pointer;
+    border: none;
+    border-radius: 3px;
+    outline: none;
+    font-size: 15px;
+    line-height: 45px;
+    background-color: $blurple;
+    color: #fff;
+    transition: all 0.35s cubic-bezier(0.25, 0.25, 0.315, 1.35);
+    box-shadow: rgba(0, 0, 0, 0.25) 0px 2px 6px 0px;
+
+    &.ripple {
+        background-position: center;
+        transition: background 0.8s;
+    }
+
+    &.ripple:hover {
+        background: $blurple-hover radial-gradient(circle, transparent 1%, $blurple-hover 1%) center/15000%;
+        transition: all 0.35s cubic-bezier(0.25, 0.25, 0.315, 1.35);
+        box-shadow: rgba(0, 0, 0, 0.5) 0px 2px 6px 0px;
+    }
+
+    &.ripple:active {
+        background-color: $blurple-active;
+        background-size: 100%;
+        transition: background 0s;
+    }
+
+    &.red {
+        background-color: $red-btn !important;
+    }
+}
