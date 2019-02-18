@@ -31,7 +31,7 @@
       "uninstallerIcon": "./build/icons/win/icon.ico",
       "installerHeaderIcon": "./build/icons/win/icon.ico",
       "uninstallDisplayName": "PlayStationDiscord ${version}",
-      "artifactName": "${productName}-${version}.${ext}",
+      "artifactName": "installer-${productName}-${version}.${ext}",
       "perMachine": true,
       "allowToChangeInstallationDirectory": true
     },
