@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/Tustin/PlayStationDiscord.svg?branch=master)](https://travis-ci.org/Tustin/PlayStationDiscord)
 ![License](https://img.shields.io/github/license/Tustin/PlayStationDiscord.svg?style=flat)
-![Discord Shield](https://discordapp.com/api/guilds/546478525629071386/widget.png?style=shield)
+[![Discord Shield](https://discordapp.com/api/guilds/546478525629071386/widget.png?style=shield)](https://discord.gg/sdDY5PJ)
 
 Discord Rich Presence for PlayStation 4, PlayStation 3, and PlayStation Vita games.
 
