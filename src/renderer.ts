@@ -1,6 +1,7 @@
 const { ipcRenderer } = require('electron');
 const fs = require('fs');
 const path = require('path');
+const log = require('electron-log');
 
 const togglePresence = document.getElementById('togglePresence');
 const signOut = document.getElementById('signOut');
@@ -32,8 +33,9 @@ ipcRenderer.on('update-status', (event: any, data: any) => {
 		fs.readFile(path.join(__dirname, `../assets/images/${data.icon}.svg`), (err: any, fileData: any) => {
 			if (err)
 			{
-				console.log(err);
-			} else
+				log.error(err);
+			}
+			else
 			{
 				updateIcon.innerHTML = fileData;
 			}
@@ -74,6 +76,10 @@ document.addEventListener('click', (event) => {
 	else if (element.id === 'notes')
 	{
 		ipcRenderer.send('show-notes');
+	}
+	else if (element.id === 'mac-download')
+	{
+		ipcRenderer.send('mac-download');
 	}
 });
 

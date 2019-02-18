@@ -462,7 +462,7 @@ autoUpdater.on('update-available', (info) => {
 	if (process.platform === 'darwin')
 	{
 		sendUpdateStatus({
-			message: 'New update available. <u id="notes">Click here</u> to download!',
+			message: 'New update available. <u id="mac-download">Click here</u> to download!',
 			icons: 'success'
 		});
 	}
@@ -502,6 +502,10 @@ ipcMain.on('update-install', () => {
 
 ipcMain.on('show-notes', () => {
 	shell.openExternal('https://github.com/Tustin/PlayStationDiscord/releases/latest');
+});
+
+ipcMain.on('mac-download', () => {
+	shell.openExternal('https://tusticles.com/PlayStationDiscord/');
 });
 
 function sendUpdateStatus(data: any) : void

@@ -1,6 +1,6 @@
 {
   "name": "playstationdiscord",
-  "version": "1.0.0",
+  "version": "3.0.0",
   "description": "Discord Rich Presence for PlayStation consoles.",
   "main": "./dist/app.js",
   "build": {
@@ -54,7 +54,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Tustin/PlayStationDiscord-Test.git"
+    "url": "git+https://github.com/Tustin/PlayStationDiscord.git"
   },
   "keywords": [
     "discord",
@@ -70,16 +70,12 @@
   "author": "Tustin",
   "license": "GPL-3.0",
   "bugs": {
-    "url": "https://github.com/Tustin/PlayStationDiscord-Test/issues"
+    "url": "https://github.com/Tustin/PlayStationDiscord/issues"
   },
-  "homepage": "https://tusticles.com/PlayStationDiscord-Test/",
+  "homepage": "https://tusticles.com/PlayStationDiscord/",
   "dependencies": {
-    "asar": "^0.14.6",
     "axios": "^0.18.0",
-    "blob": "^0.0.5",
-    "chromium-pickle-js": "^0.2.0",
     "compare-versions": "^3.4.0",
-    "cuint": "^0.2.2",
     "discord-rich-presence": "0.0.8",
     "electron-is-dev": "^1.0.1",
     "electron-log": "^3.0.1",
@@ -87,8 +83,7 @@
     "electron-updater": "^4.0.6",
     "progress-stream": "^2.0.0",
     "query-string": "^6.2.0",
-    "rimraf": "^2.6.3",
-    "tmp": "^0.0.33"
+    "rimraf": "^2.6.3"
   },
   "devDependencies": {
     "@types/electron-is-dev": "^0.3.0",
@@ -99,6 +94,7 @@
     "electron-builder": "^20.38.5",
     "electron-icon-maker": "^0.0.4",
     "electron-packager": "^13.0.1",
+    "register-scheme": "^0.0.2",
     "sass": "^1.16.1",
     "tslint": "^5.12.1",
     "typescript": "^3.2.4"
