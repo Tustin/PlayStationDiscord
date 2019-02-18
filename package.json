@@ -33,7 +33,8 @@
       "uninstallDisplayName": "PlayStationDiscord ${version}",
       "artifactName": "installer-${productName}-${version}.${ext}",
       "perMachine": true,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "include": "build/installer.nsh"
     },
     "publish": {
       "provider": "github",
@@ -43,9 +44,9 @@
   },
   "scripts": {
     "lint": "tslint --project .",
-    "compile": "tsc && sass ./assets/app.scss ./dist/app.css --style=compressed --no-source-map",
+    "compile": "npm run lint && tsc && sass ./assets/app.scss ./dist/app.css --style=compressed --no-source-map",
     "watch": "tsc -w",
-    "start": "npm run lint && npm run compile && electron .",
+    "start": "npm run compile && electron .",
     "build-icons": "electron-icon-maker -i ./assets/images/logo.png -o ./build/",
     "build-win": "npm run compile && npm run build-icons && electron-builder build --windows",
     "build-mac": "npm run compile && npm run build-icons && electron-builder build --mac",

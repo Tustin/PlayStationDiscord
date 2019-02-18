@@ -1,6 +1,7 @@
 node_modules/
 dist/*
 !dist/app.html
-build/
+build/*
+!build/installer.nsh
 *.css
 *.log
