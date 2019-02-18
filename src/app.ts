@@ -4,6 +4,7 @@ import { IOAuthTokenCodeRequestModel, IOAuthTokenRefreshRequestModel, IOAuthToke
 import { DiscordController, ps4ClientId, ps3ClientId, psVitaClientId } from './DiscordController';
 import { IDiscordPresenceModel, IDiscordPresenceUpdateOptions } from './Model/DiscordPresenceModel';
 import { autoUpdater } from 'electron-updater';
+import axios from 'axios';
 
 import _store = require('electron-store');
 import queryString = require('query-string');
