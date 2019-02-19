@@ -330,11 +330,12 @@ function spawnMainWindow() : void
 
 							log.info('Game has switched', presence.titleName);
 
-							if (supportedGames.has(presence.npTitleId) || supportedGames.has(presence.titleName))
+							const discordFriendly = supportedGames.get(presence);
+
+							if (discordFriendly !== undefined)
 							{
-								const discordFriendly = presence.npTitleId.toLowerCase();
-								discordRichPresenceData.largeImageKey = discordFriendly;
-								supportedTitleId = discordFriendly;
+								supportedTitleId = discordFriendly.titleId.toLowerCase();
+								discordRichPresenceData.largeImageKey = supportedTitleId;
 
 								log.info('Using game icon since it is supported');
 							}

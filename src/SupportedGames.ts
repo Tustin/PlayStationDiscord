@@ -1,6 +1,7 @@
 import _store = require('electron-store');
 import log = require('electron-log');
 import axios from 'axios';
+import { IPresenceModel } from './Model/ProfileModel';
 
 interface IGame
 {
@@ -65,15 +66,10 @@ class SupportedGames
 		});
 	}
 
-	public has(identifier: string) : boolean
-	{
-		return this.get(identifier) !== undefined;
-	}
-
-	public get(identifier: string) : IGame
+	public get(presence: IPresenceModel) : IGame
 	{
 		return this.store.get('consoles.ps4').find((game: IGame) => {
-			return (game.titleId.toLowerCase() === identifier.toLowerCase()) || (game.name.toLowerCase() === identifier.toLowerCase());
+			return (game.titleId.toLowerCase() === presence.npTitleId.toLowerCase()) || (game.name.toLowerCase() === presence.titleName.toLowerCase());
 		});
 	}
 }
