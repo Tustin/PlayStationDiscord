@@ -1,10 +1,14 @@
 import { app, BrowserWindow, dialog, ipcMain, nativeImage, shell, Tray, Menu, Notification } from 'electron';
 import { IPresenceModel, IProfileModel } from './Model/ProfileModel';
 import { IOAuthTokenCodeRequestModel, IOAuthTokenRefreshRequestModel, IOAuthTokenResponseModel, } from './Model/AuthenticationModel';
-import { DiscordController, ps4ClientId, ps3ClientId, psVitaClientId } from './DiscordController';
+import { DiscordController } from './DiscordController';
+import {PlayStationConsole, PlayStationConsoleType } from './Consoles/PlayStationConsole';
 import { IDiscordPresenceModel, IDiscordPresenceUpdateOptions } from './Model/DiscordPresenceModel';
 import { autoUpdater } from 'electron-updater';
 import axios from 'axios';
+import PlayStation4 from './Consoles/PlayStation4';
+import PlayStation3 from './Consoles/PlayStation3';
+import PlayStationVita from './Consoles/PlayStationVita';
 
 import _store = require('electron-store');
 import queryString = require('query-string');
@@ -30,13 +34,34 @@ let loginWindow : BrowserWindow = null;
 let discordController : DiscordController;
 let previousPresence : IPresenceModel;
 
+// Loop Ids
+let updateRichPresenceLoop : NodeJS.Timeout;
+let refreshAuthTokensLoop : NodeJS.Timeout;
+
 autoUpdater.autoDownload = false;
+
+if (isDev)
+{
+	log.transports.file.level = 'debug';
+	log.transports.console.level = 'debug';
+}
+else
+{
+	log.transports.file.level = 'info';
+	log.transports.console.level = 'info';
+}
 
 const instanceLock = app.requestSingleInstanceLock();
 if (!instanceLock)
 {
 	app.quit();
 }
+
+axios.interceptors.request.use((request) => {
+	log.debug('Firing axios request:', request);
+
+	return request;
+});
 
 app.setAppUserModelId(process.execPath);
 
@@ -73,7 +98,8 @@ function showMessageAndDie(message: string, detail?: string) : void
 		type: 'error',
 		title: 'PlayStationDiscord Error',
 		message,
-		detail
+		detail,
+		icon: logoIcon
 	}, () => {
 		app.quit();
 	});
@@ -87,6 +113,7 @@ function spawnLoginWindow() : void
 		minWidth: 414,
 		minHeight: 763,
 		icon: logoIcon,
+		title: 'PlayStation Login',
 		webPreferences: {
 			nodeIntegration: false
 		}
@@ -167,6 +194,7 @@ function spawnMainWindow() : void
 	const tray = new Tray(logoIcon);
 
 	tray.setContextMenu(contextMenu);
+	tray.setToolTip('PlayStationDiscord');
 
 	mainWindow = new BrowserWindow({
 		width: 512,
@@ -180,9 +208,8 @@ function spawnMainWindow() : void
 			nodeIntegration: true
 		},
 		frame: false,
+		title: 'PlayStationDiscord'
 	});
-
-	discordController = new DiscordController(ps4ClientId);
 
 	mainWindow.loadURL(url.format({
 		pathname: path.join(__dirname, 'app.html'),
@@ -201,7 +228,6 @@ function spawnMainWindow() : void
 		}
 
 		// Init this here just in case the initial richPresenceLoop fails and needs to call clearInterval.
-		let updateRichPresenceLoop : NodeJS.Timeout;
 		let retries : number;
 		let supportedTitleId : string;
 
@@ -213,9 +239,14 @@ function spawnMainWindow() : void
 		function richPresenceLoop() : void
 		{
 			fetchProfile().then((profile) => {
+				if (!store.get('presenceEnabled', true))
+				{
+					return undefined;
+				}
+
 				if (profile.primaryOnlineStatus !== 'online')
 				{
-					if (discordController.running())
+					if (discordController && discordController.running())
 					{
 						discordController.stop();
 						log.info('DiscordController stopped because the user is not online on PlayStation');
@@ -231,14 +262,45 @@ function spawnMainWindow() : void
 					let discordRichPresenceData : IDiscordPresenceModel;
 					let discordRichPresenceOptionsData : IDiscordPresenceUpdateOptions;
 
-					if (!discordController.running() && store.get('presenceEnabled', true))
-					{
-						discordController = new DiscordController(ps4ClientId);
-						log.info('Created new DiscordController instance');
-					}
-
 					// We really should start handling multiple presences properly at this point...
 					const presence = profile.presences[0];
+					const platform = presence.platform;
+
+					if (previousPresence === undefined || platform !== previousPresence.platform)
+					{
+						log.info('Switching console to', platform);
+
+						// Reset cached presence so we get fresh data.
+						previousPresence = undefined;
+
+						if (discordController)
+						{
+							discordController.stop();
+							discordController = undefined;
+						}
+
+						const platformType = PlayStationConsoleType[platform as (keyof typeof PlayStationConsoleType)];
+
+						if (platformType === undefined)
+						{
+							log.error(`Unexpected platform type ${platform} was not found in PlayStationConsoleType`);
+
+							return showMessageAndDie(`An error occurred when trying to assign/switch PlayStation console.`);
+						}
+
+						const playstationConsole = getConsoleFromType(platformType);
+
+						if (playstationConsole === undefined)
+						{
+							log.error(`No suitiable PlayStationConsole abstraction could be derived from platform type ${platformType}`);
+
+							return showMessageAndDie(`An error occurred when trying to assign/switch PlayStation console.`);
+						}
+
+						discordController = new DiscordController(playstationConsole);
+
+						log.info('Switched console to', playstationConsole.consoleName);
+					}
 
 					// Setup previous presence with the current presence if it's empty.
 					// Update status if the titleId has changed.
@@ -374,6 +436,26 @@ function spawnMainWindow() : void
 	});
 }
 
+function getConsoleFromType(type: PlayStationConsoleType) : PlayStationConsole
+{
+	if (type === PlayStationConsoleType.PS4)
+	{
+		return new PlayStation4();
+	}
+
+	if (type === PlayStationConsoleType.PS3)
+	{
+		return new PlayStation3();
+	}
+
+	if (type === PlayStationConsoleType.PSVITA)
+	{
+		return new PlayStationVita();
+	}
+
+	return undefined;
+}
+
 function fetchProfile() : Promise<IProfileModel>
 {
 	return new Promise<IProfileModel>((resolve, reject) => {
@@ -392,7 +474,6 @@ function fetchProfile() : Promise<IProfileModel>
 			}
 
 			return resolve(responseBody.profile);
-
 		})
 		.catch((err) => {
 			return reject(err);
@@ -413,12 +494,13 @@ function refreshTokenRequestData() : string
 }
 
 eventEmitter.on('logged-in', () => {
+	log.debug('Logged in event triggered');
+
 	const refreshTokens = () => {
 		const requestData = refreshTokenRequestData();
 
 		login(requestData).then((responseData) => {
 			log.info('Refreshed PSN OAuth tokens');
-			setTimeout(refreshTokens, parseInt(store.get('tokens.expires_in'), 10) * 1000);
 		})
 		.catch((err) => {
 			// We should probably try this multiple times if it fails, but I can't think of many reasons why it would.
@@ -431,8 +513,13 @@ eventEmitter.on('logged-in', () => {
 			eventEmitter.emit('token-refresh-failed');
 		});
 	};
+	// Going to hardcode this refresh value for now in case it is causing issues.
+	// Old expire time: parseInt(store.get('tokens.expires_in'), 10) * 1000);
+	refreshAuthTokensLoop = setInterval(refreshTokens, 3599 * 1000);
+});
 
-	setTimeout(refreshTokens, parseInt(store.get('tokens.expires_in'), 10) * 1000);
+eventEmitter.on('token-refresh-failed', () => {
+	clearInterval(refreshAuthTokensLoop);
 });
 
 ipcMain.on('toggle-presence', () => {
@@ -452,11 +539,14 @@ ipcMain.on('signout', () => {
 		buttons: ['Yes', 'No'],
 		defaultId: 0,
 		message: 'Are you sure you want to sign out?',
+		icon: logoIcon
 	}, (response) => {
 		if (response === 0)
 		{
 			spawnLoginWindow();
 			store.clear();
+			clearTimeout(refreshAuthTokensLoop);
+			clearTimeout(updateRichPresenceLoop);
 			mainWindow.close();
 		}
 	});
@@ -530,6 +620,21 @@ ipcMain.on('show-notes', () => {
 ipcMain.on('mac-download', () => {
 	shell.openExternal('https://tusticles.com/PlayStationDiscord/');
 });
+
+ipcMain.on('discord-reconnect', () => {
+	if (discordController && discordController.running())
+	{
+		toggleDiscordReconnect(true);
+	}
+});
+
+function toggleDiscordReconnect(toggle: boolean) : void
+{
+	if (mainWindow)
+	{
+		mainWindow.webContents.send('disable-discord-reconnect', toggle);
+	}
+}
 
 function sendUpdateStatus(data: any) : void
 {

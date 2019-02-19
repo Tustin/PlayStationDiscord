@@ -1,12 +1,9 @@
-export const ps4ClientId : string 		= '457775893746810880';
-export const ps3ClientId : string 		= '459823182044725269';
-export const psVitaClientId : string 	= '493957159323828259';
-
 let discordClient : any;
 
 import { dialog } from 'electron';
 import log = require('electron-log');
 import { IDiscordPresenceModel, IDiscordPresenceUpdateOptions } from './Model/DiscordPresenceModel';
+import { PlayStationConsole } from './Consoles/PlayStationConsole';
 
 const packageJson = require('../package.json');
 
@@ -21,9 +18,11 @@ interface IDiscordPresenceDefaultDataModel
 
 export class DiscordController
 {
-	private _currentConsole : string;
+	private _currentConsole : PlayStationConsole;
 	private _running : boolean = false;
 	private _lastStartTimestamp : number;
+
+	// Most of these properties get replaced in the constructor for the respective console.
 	private _defaultInfo : IDiscordPresenceDefaultDataModel =  {
 		instance: true,
 		largeImageKey: 'ps4_main',
@@ -32,16 +31,21 @@ export class DiscordController
 		smallImageText: 'PlayStationDiscord ' + (packageJson.version || '')
 	};
 
-	constructor(clientId: string)
+	constructor(console: PlayStationConsole)
 	{
-		this._currentConsole = clientId;
+		this._currentConsole = console;
 
-		discordClient = require('discord-rich-presence')(clientId);
+		discordClient = require('discord-rich-presence')(console.clientId);
+
+		this._defaultInfo.largeImageKey = console.assetName;
+		this._defaultInfo.largeImageText = console.consoleName;
+		this._defaultInfo.smallImageKey = console.assetName;
 
 		this._running = true;
 
 		discordClient.on('error', (err: any) => {
 			log.error('An error occurred while communicating with Discord', err);
+
 			dialog.showMessageBox(null, {
 				type: 'error',
 				title: 'PlayStationDiscord Error',

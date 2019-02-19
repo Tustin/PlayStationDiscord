@@ -1,5 +1,4 @@
 import _store = require('electron-store');
-import https = require('https');
 import log = require('electron-log');
 import axios from 'axios';
 

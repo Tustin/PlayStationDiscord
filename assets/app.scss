@@ -100,7 +100,6 @@ body {
         height: 100%;
         width: 100%;
         margin-top: 32px;
-        justify-content: center;
 
         #update-info {
             display: grid;
@@ -175,6 +174,32 @@ body {
             grid-row: 3;
             grid-column: 1;
             text-align: center;
+        }
+
+        footer {
+            grid-row: 4;
+
+            #discord-reconnect {
+                position: absolute;
+                bottom: 0;
+                float: left;
+                color: rgba(255, 255, 255, .7);
+                font-size: 12px;
+                cursor: pointer;
+
+                &:hover {
+                    color: #fff;
+                }
+
+                img {
+                    animation-play-state: paused;
+                    vertical-align: middle;
+
+                    &:hover {
+                        animation-play-state: running;
+                    }
+                }
+            }
         }
     }
 }
