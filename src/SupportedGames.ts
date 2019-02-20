@@ -1,6 +1,7 @@
 import _store = require('electron-store');
-import https = require('https');
 import log = require('electron-log');
+import axios from 'axios';
+import { IPresence } from './Model/ProfileModel';
 
 interface IGame
 {
@@ -44,54 +45,31 @@ class SupportedGames
 			headers['If-None-Match'] = checksum;
 		}
 
-		const options : any = {
-			headers,
-			hostname: 'raw.githubusercontent.com',
-			method: 'GET',
-			path: '/Tustin/PlayStationDiscord-Games/master/games.json?_=' + Date.now(), // Prevents caching
-			port: 443,
-		};
+		axios.get(`https://raw.githubusercontent.com/Tustin/PlayStationDiscord-Games/master/games.json?_=${Date.now()}`, {
+			headers
+		})
+		.then((response) => {
+			this.store.set('consoles', response.data);
+			this.store.set('etag', response.headers.etag);
 
-		let badLibrary : string = '';
-
-		const request = https.request(options, (response) => {
-			response.setEncoding('utf8');
-
-			// Not modified.
-			if (response.statusCode === 304)
+			log.info('Saved new version of games.json');
+		})
+		.catch((err) => {
+			if (err.response.status === 304)
 			{
 				log.info('PlayStationDiscord-Games has not been updated, using cached version');
 
-				return;
+				return undefined;
 			}
 
-			response.on('data', (lolWhyIsThisAChunk) => {
-				badLibrary += lolWhyIsThisAChunk;
-			});
-
-			response.on('end', () => {
-				this.store.set('consoles', JSON.parse(badLibrary));
-				this.store.set('etag', response.headers.etag);
-				log.info('Saved new version of games.json');
-			});
-		});
-
-		request.on('error', (err) => {
 			log.error('Failed requesting games.json from the PlayStationDiscord-Games repo', err);
 		});
-
-		request.end();
 	}
 
-	public has(identifier: string) : boolean
-	{
-		return this.get(identifier) !== undefined;
-	}
-
-	public get(identifier: string) : IGame
+	public get(presence: IPresence) : IGame
 	{
 		return this.store.get('consoles.ps4').find((game: IGame) => {
-			return (game.titleId.toLowerCase() === identifier.toLowerCase()) || (game.name.toLowerCase() === identifier.toLowerCase());
+			return (game.titleId.toLowerCase() === presence.npTitleId.toLowerCase()) || (game.name.toLowerCase() === presence.titleName.toLowerCase());
 		});
 	}
 }

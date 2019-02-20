@@ -9,6 +9,7 @@ const updateInfo = document.getElementById('update-info');
 const updateIcon = updateInfo.querySelector('#icon') as HTMLImageElement;
 const updateText = updateInfo.querySelector('#text');
 const installLink = document.getElementById('install');
+const discordReconnect = document.getElementById('discord-reconnect');
 
 ipcRenderer.on('profile-data', (event: any, data: any) => {
 	const image : HTMLImageElement = document.getElementById('avatar') as HTMLImageElement;
@@ -65,7 +66,11 @@ ipcRenderer.on('presence-data', (event: any, data: any) => {
 	}
 });
 
-// Hacky way of checking for install update click since the element won't always exist.
+ipcRenderer.on('toggle-discord-reconnect', (event: any, toggle: boolean) => {
+	discordReconnect.style.display = toggle ? 'block' : 'none';
+});
+
+// Hacky way of checking for certain elements since they won't always exist.
 document.addEventListener('click', (event) => {
 	const element = event.target as HTMLElement;
 
@@ -80,6 +85,10 @@ document.addEventListener('click', (event) => {
 	else if (element.id === 'mac-download')
 	{
 		ipcRenderer.send('mac-download');
+	}
+	else if (element.id === 'discord-reconnect')
+	{
+		ipcRenderer.send('discord-reconnect');
 	}
 });
 

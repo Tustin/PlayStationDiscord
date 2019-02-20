@@ -1,4 +1,4 @@
-export interface IOAuthTokenResponseModel
+export interface IOAuthTokenResponse
 {
 	access_token : string;
 	token_type : string;
@@ -7,14 +7,21 @@ export interface IOAuthTokenResponseModel
 	scope : string;
 }
 
-export interface IOAuthTokenCodeRequestModel
+export function isOAuthTokenResponse(data: any) : data is IOAuthTokenResponse
+{
+	const test = data as IOAuthTokenResponse;
+
+	return test.access_token !== undefined;
+}
+
+export interface IOAuthTokenCodeRequest
 {
 	code : string;
 	grant_type : string;
 	redirect_uri : string;
 }
 
-export interface IOAuthTokenRefreshRequestModel
+export interface IOAuthTokenRefreshRequest
 {
 	refresh_token : string;
 	grant_type : string;

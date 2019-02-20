@@ -1,6 +1,6 @@
 {
   "name": "playstationdiscord",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Discord Rich Presence for PlayStation consoles.",
   "main": "./dist/app.js",
   "build": {
@@ -47,10 +47,11 @@
     "compile": "npm run lint && tsc && sass ./assets/app.scss ./dist/app.css --style=compressed --no-source-map",
     "watch": "tsc -w",
     "start": "npm run compile && electron .",
-    "build-icons": "electron-icon-maker -i ./assets/images/logo.png -o ./build/",
-    "build-win": "npm run compile && npm run build-icons && electron-builder build --windows",
-    "build-mac": "npm run compile && npm run build-icons && electron-builder build --mac",
-    "release": "npm run compile && npm run build-icons && electron-builder build"
+    "build:icons": "electron-icon-maker -i ./assets/images/logo.png -o ./build/",
+    "build:win": "npm run compile && npm run build:icons && electron-builder build --windows",
+    "build:mac": "npm run compile && npm run build:icons && electron-builder build --mac",
+    "release": "npm run compile && npm run build:icons && electron-builder build",
+    "test": "npm run compile && npm run build:icons && electron-packager . --asar --overwrite --out=test && ./test/playstationdiscord-win32-x64/playstationdiscord.exe"
   },
   "repository": {
     "type": "git",
@@ -82,8 +83,7 @@
     "electron-store": "^2.0.0",
     "electron-updater": "^4.0.6",
     "progress-stream": "^2.0.0",
-    "query-string": "^6.2.0",
-    "rimraf": "^2.6.3"
+    "query-string": "^6.2.0"
   },
   "devDependencies": {
     "@types/electron-is-dev": "^0.3.0",
