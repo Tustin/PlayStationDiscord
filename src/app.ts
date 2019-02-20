@@ -1,6 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, nativeImage, shell, Tray, Menu, Notification } from 'electron';
-import { IPresenceModel, IProfileModel } from './Model/ProfileModel';
-import { IOAuthTokenCodeRequestModel, IOAuthTokenRefreshRequestModel, IOAuthTokenResponseModel, } from './Model/AuthenticationModel';
+import { IPresence, IProfile } from './Model/ProfileModel';
+import { IOAuthTokenResponse, } from './Model/AuthenticationModel';
 import { DiscordController } from './DiscordController';
 import {PlayStationConsole, PlayStationConsoleType } from './Consoles/PlayStationConsole';
 import { IDiscordPresenceModel, IDiscordPresenceUpdateOptions } from './Model/DiscordPresenceModel';
@@ -9,12 +9,12 @@ import axios from 'axios';
 import PlayStation4 from './Consoles/PlayStation4';
 import PlayStation3 from './Consoles/PlayStation3';
 import PlayStationVita from './Consoles/PlayStationVita';
+import appEvent from './Events';
+import PlayStationAccount from './PlayStation/Account';
 
 import _store = require('electron-store');
 import queryString = require('query-string');
-import https = require('https');
 import log = require('electron-log');
-import events = require('events');
 import url = require('url');
 import path = require('path');
 import isDev = require('electron-is-dev');
@@ -22,17 +22,21 @@ import isDev = require('electron-is-dev');
 const supportedGames = require('./SupportedGames');
 
 const store = new _store();
-const eventEmitter = new events.EventEmitter();
 
 const sonyLoginUrl : string = 'https://id.sonyentertainmentnetwork.com/signin/?service_entity=urn:service-entity:psn&response_type=code&client_id=ba495a24-818c-472b-b12d-ff231c1b5745&redirect_uri=https://remoteplay.dl.playstation.net/remoteplay/redirect&scope=psn:clientapp&request_locale=en_US&ui=pr&service_logo=ps&layout_type=popup&smcid=remoteplay&PlatformPrivacyWs1=exempt&error=login_required&error_code=4165&error_description=User+is+not+authenticated#/signin?entry=%2Fsignin';
 
 const logoIcon = nativeImage.createFromPath(path.join(__dirname, '../assets/images/logo.png'));
 
-let mainWindow : BrowserWindow = null;
-let loginWindow : BrowserWindow = null;
+// Windows
+let mainWindow : BrowserWindow;
+let loginWindow : BrowserWindow;
 
+// Instance of the logged in account
+let playstationAccount : PlayStationAccount;
+
+// Discord stuff
 let discordController : DiscordController;
-let previousPresence : IPresenceModel;
+let previousPresence : IPresence;
 
 // Loop Ids
 let updateRichPresenceLoop : NodeJS.Timeout;
@@ -64,32 +68,6 @@ axios.interceptors.request.use((request) => {
 });
 
 app.setAppUserModelId(process.execPath);
-
-function login(data: string) : Promise<IOAuthTokenResponseModel>
-{
-	return new Promise<IOAuthTokenResponseModel>((resolve, reject) => {
-		axios.post('https://auth.api.sonyentertainmentnetwork.com/2.0/oauth/token', data, {
-			headers: {
-				'Authorization': 'Basic YmE0OTVhMjQtODE4Yy00NzJiLWIxMmQtZmYyMzFjMWI1NzQ1Om12YWlaa1JzQXNJMUlCa1k=',
-				'Content-Type': 'application/x-www-form-urlencoded'
-			}
-		})
-		.then((response) => {
-			const responseBody = response.data;
-			if (responseBody.error)
-			{
-				return reject(responseBody);
-			}
-
-			store.set('tokens', responseBody);
-
-			return resolve(responseBody);
-		})
-		.catch((err) => {
-			return reject(err);
-		});
-	});
-}
 
 // Relevant: https://i.imgur.com/7QDkNqx.png
 function showMessageAndDie(message: string, detail?: string) : void
@@ -147,23 +125,19 @@ function spawnLoginWindow() : void
 				return;
 			}
 
-			const data : string = queryString.stringify({
-				grant_type: 'authorization_code',
-				code: items.code,
-				redirect_uri: 'https://remoteplay.dl.playstation.net/remoteplay/redirect'
-			} as IOAuthTokenCodeRequestModel);
+			PlayStationAccount.login(items.code)
+			.then((account) => {
+				playstationAccount = account;
 
-			login(data).then((tokenData) =>
-			{
+				store.set('tokens', account.data);
+
 				log.info('Saved oauth tokens');
-				eventEmitter.emit('logged-in');
 
 				spawnMainWindow();
 
 				loginWindow.close();
 			})
-			.catch((err) =>
-			{
+			.catch((err) => {
 				log.error('Unable to get PSN OAuth tokens', err);
 
 				showMessageAndDie(
@@ -227,172 +201,11 @@ function spawnMainWindow() : void
 			log.debug('Skipping update check because app is running in dev mode');
 		}
 
-		// Init this here just in case the initial richPresenceLoop fails and needs to call clearInterval.
-		let retries : number;
-		let supportedTitleId : string;
+		// Start running the rich presence updater.
+		updateRichPresence();
 
-		eventEmitter.on('refresh-token-failed', () => {
-			log.info('Stopping update rich presence loop because token refresh failed');
-			clearTimeout(updateRichPresenceLoop);
-		});
-
-		function richPresenceLoop() : void
-		{
-			fetchProfile().then((profile) => {
-				if (!store.get('presenceEnabled', true))
-				{
-					return undefined;
-				}
-
-				if (profile.primaryOnlineStatus !== 'online')
-				{
-					if (discordController && discordController.running())
-					{
-						discordController.stop();
-						log.info('DiscordController stopped because the user is not online on PlayStation');
-					}
-
-					// Just update the form like this so we don't update rich presence.
-					mainWindow.webContents.send('presence-data', {
-						details: 'Offline'
-					});
-				}
-				else if (profile.primaryOnlineStatus === 'online')
-				{
-					let discordRichPresenceData : IDiscordPresenceModel;
-					let discordRichPresenceOptionsData : IDiscordPresenceUpdateOptions;
-
-					// We really should start handling multiple presences properly at this point...
-					const presence = profile.presences[0];
-					const platform = presence.platform;
-
-					if (previousPresence === undefined || platform !== previousPresence.platform)
-					{
-						log.info('Switching console to', platform);
-
-						// Reset cached presence so we get fresh data.
-						previousPresence = undefined;
-
-						if (discordController)
-						{
-							discordController.stop();
-							discordController = undefined;
-						}
-
-						const platformType = PlayStationConsoleType[platform as (keyof typeof PlayStationConsoleType)];
-
-						if (platformType === undefined)
-						{
-							log.error(`Unexpected platform type ${platform} was not found in PlayStationConsoleType`);
-
-							return showMessageAndDie(`An error occurred when trying to assign/switch PlayStation console.`);
-						}
-
-						const playstationConsole = getConsoleFromType(platformType);
-
-						if (playstationConsole === undefined)
-						{
-							log.error(`No suitiable PlayStationConsole abstraction could be derived from platform type ${platformType}`);
-
-							return showMessageAndDie(`An error occurred when trying to assign/switch PlayStation console.`);
-						}
-
-						discordController = new DiscordController(playstationConsole);
-
-						log.info('Switched console to', playstationConsole.consoleName);
-					}
-
-					// Setup previous presence with the current presence if it's empty.
-					// Update status if the titleId has changed.
-					if (previousPresence === undefined || previousPresence.npTitleId !== presence.npTitleId)
-					{
-						// See if we're actually playing a title.
-						if (presence.npTitleId === undefined)
-						{
-							discordRichPresenceData = {
-								details: 'Online',
-							};
-
-							discordRichPresenceOptionsData = {
-								hideTimestamp: true
-							};
-
-							log.info('Status set to online');
-						}
-						else
-						{
-							discordRichPresenceData = {
-								details: presence.titleName,
-								state: presence.gameStatus,
-								startTimestamp: Date.now(),
-								largeImageText: presence.titleName
-							};
-
-							log.info('Game has switched', presence.titleName);
-
-							const discordFriendly = supportedGames.get(presence);
-
-							if (discordFriendly !== undefined)
-							{
-								supportedTitleId = discordFriendly.titleId.toLowerCase();
-								discordRichPresenceData.largeImageKey = supportedTitleId;
-
-								log.info('Using game icon since it is supported');
-							}
-							else
-							{
-								supportedTitleId = undefined;
-							}
-						}
-					}
-					// Update if game status has changed.
-					else if (previousPresence === undefined || previousPresence.gameStatus !== presence.gameStatus)
-					{
-						discordRichPresenceData = {
-							details: presence.titleName,
-							state: presence.gameStatus,
-							largeImageText: presence.titleName
-						};
-
-						if (supportedTitleId !== undefined)
-						{
-							discordRichPresenceData.largeImageKey = supportedTitleId;
-						}
-
-						log.info('Game status has changed', presence.gameStatus);
-					}
-
-					// Only send a rich presence update if we have something new.
-					if (discordRichPresenceData !== undefined)
-					{
-						// Cache it.
-						previousPresence = presence;
-
-						discordController.update(discordRichPresenceData, discordRichPresenceOptionsData).then(() => {
-							log.info('Updated rich presence');
-							mainWindow.webContents.send('presence-data', discordRichPresenceData);
-						}).catch((err) => {
-							log.error('Failed updating rich presence', err);
-						});
-					}
-				}
-				mainWindow.webContents.send('profile-data', profile);
-				retries = 0;
-			})
-			.catch((err) => {
-				log.error('Failed fetching PSN profile', err);
-
-				if (++retries === 5)
-				{
-					clearInterval(updateRichPresenceLoop);
-					log.error('Stopped rich presence loop because of too many retries without success');
-				}
-			});
-		}
-
-		richPresenceLoop();
-
-		updateRichPresenceLoop = setInterval(richPresenceLoop, 15000);
+		// Set the loop timeout id so it can be cancelled globally.
+		updateRichPresenceLoop = setInterval(updateRichPresence, 15000);
 	});
 
 	mainWindow.on('ready-to-show', () => {
@@ -437,6 +250,168 @@ function spawnMainWindow() : void
 	});
 }
 
+let richPresenceRetries : number;
+
+function updateRichPresence() : void
+{
+	if (!store.get('presenceEnabled', true))
+	{
+		console.log('disabled');
+
+		return;
+	}
+
+	let supportedTitleId : string;
+
+	playstationAccount.profile()
+	.then((profile) => {
+		if (profile.primaryOnlineStatus !== 'online')
+		{
+			if (discordController && discordController.running())
+			{
+				discordController.stop();
+				log.info('DiscordController stopped because the user is not online on PlayStation');
+			}
+			else if (profile.primaryOnlineStatus === 'online')
+			{
+				let discordRichPresenceData : IDiscordPresenceModel;
+				let discordRichPresenceOptionsData : IDiscordPresenceUpdateOptions;
+
+				// We really should start handling multiple presences properly at this point...
+				const presence = profile.presences[0];
+				const platform = presence.platform;
+
+				if (previousPresence === undefined || platform !== previousPresence.platform)
+				{
+					log.info('Switching console to', platform);
+
+					// Reset cached presence so we get fresh data.
+					previousPresence = undefined;
+
+					if (discordController)
+					{
+						discordController.stop();
+						discordController = undefined;
+					}
+
+					const platformType = PlayStationConsoleType[platform as (keyof typeof PlayStationConsoleType)];
+
+					if (platformType === undefined)
+					{
+						log.error(`Unexpected platform type ${platform} was not found in PlayStationConsoleType`);
+
+						return showMessageAndDie(`An error occurred when trying to assign/switch PlayStation console.`);
+					}
+
+					const playstationConsole = getConsoleFromType(platformType);
+
+					if (playstationConsole === undefined)
+					{
+						log.error(`No suitiable PlayStationConsole abstraction could be derived from platform type ${platformType}`);
+
+						return showMessageAndDie(`An error occurred when trying to assign/switch PlayStation console.`);
+					}
+
+					discordController = new DiscordController(playstationConsole);
+
+					log.info('Switched console to', playstationConsole.consoleName);
+				}
+
+				// Setup previous presence with the current presence if it's empty.
+				// Update status if the titleId has changed.
+				if (previousPresence === undefined || previousPresence.npTitleId !== presence.npTitleId)
+				{
+					// See if we're actually playing a title.
+					if (presence.npTitleId === undefined)
+					{
+						discordRichPresenceData = {
+							details: 'Online',
+						};
+
+						discordRichPresenceOptionsData = {
+							hideTimestamp: true
+						};
+
+						log.info('Status set to online');
+					}
+					else
+					{
+						discordRichPresenceData = {
+							details: presence.titleName,
+							state: presence.gameStatus,
+							startTimestamp: Date.now(),
+							largeImageText: presence.titleName
+						};
+
+						log.info('Game has switched', presence.titleName);
+
+						const discordFriendly = supportedGames.get(presence);
+
+						if (discordFriendly !== undefined)
+						{
+							supportedTitleId = discordFriendly.titleId.toLowerCase();
+							discordRichPresenceData.largeImageKey = supportedTitleId;
+
+							log.info('Using game icon since it is supported');
+						}
+						else
+						{
+							supportedTitleId = undefined;
+						}
+					}
+				}
+				// Update if game status has changed.
+				else if (previousPresence === undefined || previousPresence.gameStatus !== presence.gameStatus)
+				{
+					discordRichPresenceData = {
+						details: presence.titleName,
+						state: presence.gameStatus,
+						largeImageText: presence.titleName
+					};
+
+					if (supportedTitleId !== undefined)
+					{
+						discordRichPresenceData.largeImageKey = supportedTitleId;
+					}
+
+					log.info('Game status has changed', presence.gameStatus);
+				}
+
+				// Only send a rich presence update if we have something new.
+				if (discordRichPresenceData !== undefined)
+				{
+					// Cache it.
+					previousPresence = presence;
+
+					discordController.update(discordRichPresenceData, discordRichPresenceOptionsData).then(() => {
+						log.info('Updated rich presence');
+						mainWindow.webContents.send('presence-data', discordRichPresenceData);
+					}).catch((err) => {
+						log.error('Failed updating rich presence', err);
+					});
+				}
+			}
+
+			mainWindow.webContents.send('profile-data', profile);
+			richPresenceRetries = 0;
+
+			// Just update the form like this so we don't update rich presence.
+			mainWindow.webContents.send('presence-data', {
+				details: 'Offline'
+			});
+		}
+	})
+	.catch((err) => {
+		log.error('Failed fetching PSN profile', err);
+
+		if (++richPresenceRetries === 5)
+		{
+			clearInterval(updateRichPresenceLoop);
+			log.error('Stopped rich presence loop because of too many retries without success');
+		}
+	});
+}
+
 function getConsoleFromType(type: PlayStationConsoleType) : PlayStationConsole
 {
 	if (type === PlayStationConsoleType.PS4)
@@ -457,70 +432,71 @@ function getConsoleFromType(type: PlayStationConsoleType) : PlayStationConsole
 	return undefined;
 }
 
-function fetchProfile() : Promise<IProfileModel>
+function signoutCleanup()
 {
-	return new Promise<IProfileModel>((resolve, reject) => {
-		const accessToken = store.get('tokens.access_token');
-
-		axios.get('https://us-prof.np.community.playstation.net/userProfile/v1/users/me/profile2?fields=onlineId,avatarUrls,plus,primaryOnlineStatus,presences(@titleInfo)&avatarSizes=m,xl&titleIconSize=s', {
-			headers: {
-				Authorization: `Bearer ${accessToken}`
-			}
-		})
-		.then((response) => {
-			const responseBody = response.data;
-			if (responseBody.error)
-			{
-				return reject(responseBody);
-			}
-
-			return resolve(responseBody.profile);
-		})
-		.catch((err) => {
-			return reject(err);
-		});
-	});
+	spawnLoginWindow();
+	store.clear();
+	clearTimeout(refreshAuthTokensLoop);
+	clearTimeout(updateRichPresenceLoop);
+	mainWindow.close();
 }
 
-function refreshTokenRequestData() : string
+function toggleDiscordReconnect(toggle: boolean) : void
 {
-	const tokens = store.get('tokens');
-
-	return queryString.stringify({
-		grant_type: 'refresh_token',
-		refresh_token: tokens.refresh_token,
-		redirect_uri: 'https://remoteplay.dl.playstation.net/remoteplay/redirect',
-		scope: tokens.scope
-	} as IOAuthTokenRefreshRequestModel);
+	if (mainWindow)
+	{
+		mainWindow.webContents.send('disable-discord-reconnect', toggle);
+	}
 }
 
-eventEmitter.on('logged-in', () => {
+function sendUpdateStatus(data: any) : void
+{
+	if (mainWindow)
+	{
+		mainWindow.webContents.send('update-status', data);
+	}
+}
+
+function toggleUpdateInfo(value: boolean) : void
+{
+	if (mainWindow)
+	{
+		mainWindow.webContents.send('update-toggle', value);
+	}
+}
+
+appEvent.on('logged-in', () => {
 	log.debug('Logged in event triggered');
 
-	const refreshTokens = () => {
-		const requestData = refreshTokenRequestData();
+	if (refreshAuthTokensLoop)
+	{
+		log.warn('logged-in was fired but refreshAuthTokensLoop is already running so nothing is being done');
 
-		login(requestData).then((responseData) => {
+		return;
+	}
+
+	// Going to hardcode this refresh value for now in case it is causing issues.
+	// Old expire time: parseInt(store.get('tokens.expires_in'), 10) * 1000);
+	refreshAuthTokensLoop = setInterval(() => {
+		playstationAccount.refresh()
+		.then((data) => {
+			store.set('tokens', data);
+
 			log.info('Refreshed PSN OAuth tokens');
 		})
 		.catch((err) => {
-			// We should probably try this multiple times if it fails, but I can't think of many reasons why it would.
 			log.error('Failed refreshing PSN OAuth tokens', err);
-
-			showMessageAndDie(
-				'Sorry, an error occurred when trying to refresh your account tokens. Please restart the program.'
-			);
-
-			eventEmitter.emit('token-refresh-failed');
 		});
-	};
-	// Going to hardcode this refresh value for now in case it is causing issues.
-	// Old expire time: parseInt(store.get('tokens.expires_in'), 10) * 1000);
-	refreshAuthTokensLoop = setInterval(refreshTokens, 3599 * 1000);
+	}, 3599 * 1000);
 });
 
-eventEmitter.on('token-refresh-failed', () => {
-	clearInterval(refreshAuthTokensLoop);
+appEvent.on('tokens-refresh-failed', (err) => {
+	dialog.showMessageBox(mainWindow, {
+		type: 'error',
+		title: 'PlayStationDiscord Error',
+		message: 'An error occurred while trying to refresh your authorization tokens. You will need to login again.',
+		icon: logoIcon
+	}, () => signoutCleanup());
 });
 
 ipcMain.on('toggle-presence', () => {
@@ -534,7 +510,7 @@ ipcMain.on('toggle-presence', () => {
 });
 
 ipcMain.on('signout', () => {
-	dialog.showMessageBox(null, {
+	dialog.showMessageBox(mainWindow, {
 		type: 'question',
 		title: 'PlayStationDiscord Alert',
 		buttons: ['Yes', 'No'],
@@ -544,11 +520,7 @@ ipcMain.on('signout', () => {
 	}, (response) => {
 		if (response === 0)
 		{
-			spawnLoginWindow();
-			store.clear();
-			clearTimeout(refreshAuthTokensLoop);
-			clearTimeout(updateRichPresenceLoop);
-			mainWindow.close();
+			signoutCleanup();
 		}
 	});
 });
@@ -623,35 +595,12 @@ ipcMain.on('mac-download', () => {
 });
 
 ipcMain.on('discord-reconnect', () => {
-	if (discordController && discordController.running())
-	{
-		toggleDiscordReconnect(true);
-	}
+	console.log('reconnect');
 });
 
-function toggleDiscordReconnect(toggle: boolean) : void
-{
-	if (mainWindow)
-	{
-		mainWindow.webContents.send('disable-discord-reconnect', toggle);
-	}
-}
-
-function sendUpdateStatus(data: any) : void
-{
-	if (mainWindow)
-	{
-		mainWindow.webContents.send('update-status', data);
-	}
-}
-
-function toggleUpdateInfo(value: boolean) : void
-{
-	if (mainWindow)
-	{
-		mainWindow.webContents.send('update-toggle', value);
-	}
-}
+appEvent.on('discord-disconnected', () => {
+	toggleDiscordReconnect(true);
+});
 
 app.on('second-instance', () => {
 	if (!mainWindow)
@@ -668,7 +617,6 @@ app.on('second-instance', () => {
 });
 
 app.on('ready', () => {
-
 	// Fix for #26
 	if (process.platform === 'darwin')
 	{
@@ -690,15 +638,18 @@ app.on('ready', () => {
 
 	if (store.has('tokens'))
 	{
-		const requestData = refreshTokenRequestData();
+		PlayStationAccount.login(store.get('tokens') as IOAuthTokenResponse)
+		.then((account) => {
+			playstationAccount = account;
 
-		login(requestData).then((responseData) => {
-			log.info('Updated PSN OAuth tokens');
-			eventEmitter.emit('logged-in');
+			store.set('tokens', playstationAccount.data);
+
+			log.info('Logged in with existing refresh token');
 
 			spawnMainWindow();
-		}).catch((err) => {
-			log.error('Failed logging in with saved OAuth tokens', err);
+		})
+		.catch((err) => {
+			log.error('Failed logging in with saved refresh token', err);
 
 			spawnLoginWindow();
 		});

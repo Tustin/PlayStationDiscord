@@ -1,10 +1,10 @@
-interface IAvatarUrlModel
+interface IAvatarUrl
 {
 	size : string;
 	avatarUrl : string;
 }
 
-export interface IPresenceModel
+export interface IPresence
 {
 	onlineStatus : string;
 	platform : string;
@@ -14,11 +14,11 @@ export interface IPresenceModel
 	gameStatus : string;
 }
 
-export interface IProfileModel
+export interface IProfile
 {
 	onlineId : string;
-	avatarUrls : IAvatarUrlModel[];
+	avatarUrls : IAvatarUrl[];
 	plus : boolean;
 	primaryOnlineStatus : string;
-	presences : IPresenceModel[];
+	presences : IPresence[];
 }

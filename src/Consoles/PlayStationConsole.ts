@@ -1,4 +1,3 @@
-// Don't try to change the formatting here. These are how the PlayStation API returns the platform names. It's bad, I know.
 export enum PlayStationConsoleType
 {
 	PS4,

@@ -1,9 +1,10 @@
 let discordClient : any;
 
-import { dialog } from 'electron';
+import { dialog, ipcMain } from 'electron';
 import log = require('electron-log');
 import { IDiscordPresenceModel, IDiscordPresenceUpdateOptions } from './Model/DiscordPresenceModel';
 import { PlayStationConsole } from './Consoles/PlayStationConsole';
+import appEvent from './Events';
 
 const packageJson = require('../package.json');
 
@@ -53,8 +54,16 @@ export class DiscordController
 				detail: err.toString()
 			});
 
+			appEvent.emit('discord-disconnected', err);
+
 			this._running = false;
 		});
+	}
+
+	public restart() : void
+	{
+		this.stop();
+		discordClient = new DiscordController(this._currentConsole);
 	}
 
 	public running() : boolean

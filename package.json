@@ -83,8 +83,7 @@
     "electron-store": "^2.0.0",
     "electron-updater": "^4.0.6",
     "progress-stream": "^2.0.0",
-    "query-string": "^6.2.0",
-    "rimraf": "^2.6.3"
+    "query-string": "^6.2.0"
   },
   "devDependencies": {
     "@types/electron-is-dev": "^0.3.0",
