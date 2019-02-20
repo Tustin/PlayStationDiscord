@@ -58,6 +58,8 @@ export class DiscordController
 
 			this._running = false;
 		});
+
+		log.info('DiscordController init');
 	}
 
 	public restart() : void

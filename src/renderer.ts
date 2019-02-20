@@ -67,7 +67,7 @@ ipcRenderer.on('presence-data', (event: any, data: any) => {
 });
 
 ipcRenderer.on('toggle-discord-reconnect', (event: any, toggle: boolean) => {
-	discordReconnect.style.display = toggle ? 'grid' : 'none';
+	discordReconnect.style.display = toggle ? 'block' : 'none';
 });
 
 // Hacky way of checking for install update click since the element won't always exist.
