@@ -214,11 +214,6 @@ function spawnMainWindow() : void
 	});
 
 	mainWindow.on('minimize', () => {
-		if (process.platform !== 'win32')
-		{
-			return;
-		}
-
 		mainWindow.hide();
 
 		if (Notification.isSupported())
@@ -250,11 +245,6 @@ let richPresenceRetries : number;
 
 function updateRichPresence() : void
 {
-	if (!store.get('presenceEnabled', true))
-	{
-		return;
-	}
-
 	let supportedTitleId : string;
 
 	playstationAccount.profile()
@@ -264,6 +254,8 @@ function updateRichPresence() : void
 			if (discordController && discordController.running())
 			{
 				discordController.stop();
+				previousPresence = undefined;
+
 				log.info('DiscordController stopped because the user is not online on PlayStation');
 			}
 		}
@@ -372,8 +364,8 @@ function updateRichPresence() : void
 				log.info('Game status has changed', presence.gameStatus);
 			}
 
-			// Only send a rich presence update if we have something new.
-			if (discordRichPresenceData !== undefined)
+			// Only send a rich presence update if we have something new and it's enabled.
+			if (discordRichPresenceData !== undefined && store.get('presenceEnabled', true))
 			{
 				// Cache it.
 				previousPresence = presence;
@@ -386,14 +378,14 @@ function updateRichPresence() : void
 				});
 			}
 
-			mainWindow.webContents.send('profile-data', profile);
-			richPresenceRetries = 0;
-
 			// Just update the form like this so we don't update rich presence.
 			mainWindow.webContents.send('presence-data', {
 				details: 'Offline'
 			});
 		}
+
+		mainWindow.webContents.send('profile-data', profile);
+		richPresenceRetries = 0;
 	})
 	.catch((err) => {
 		log.error('Failed fetching PSN profile', err);
@@ -507,6 +499,7 @@ appEvent.on('tokens-refresh-failed', (err) => {
 appEvent.on('start-rich-presence', () => {
 	if (!updateRichPresenceLoop)
 	{
+		log.info('Starting rich presence loop');
 		// Start running the rich presence updater.
 		updateRichPresence();
 
@@ -519,7 +512,7 @@ appEvent.on('stop-rich-presence', () => {
 	updateRichPresenceLoop = stopTimer(updateRichPresenceLoop);
 	previousPresence = undefined;
 
-	log.info('Stopped rich presence');
+	log.info('Stopped rich presence loop');
 });
 
 ipcMain.on('toggle-presence', () => {
@@ -650,19 +643,26 @@ app.on('ready', () => {
 	// Fix for #26
 	if (process.platform === 'darwin')
 	{
-		Menu.setApplicationMenu(Menu.buildFromTemplate([{
-			label: 'Edit',
-			submenu: [
-				{ role: 'undo' },
-				{ role: 'redo' },
-				{ type: 'separator' },
-				{ role: 'cut' },
-				{ role: 'copy' },
-				{ role: 'paste' },
-				{ role: 'pasteandmatchstyle' },
-				{ role: 'delete' },
-				{ role: 'selectall' }
-			]
+		Menu.setApplicationMenu(Menu.buildFromTemplate([
+			{
+				label: 'Application',
+				submenu: [
+					{ label: 'Quit', accelerator: 'Command+Q', click: () => app.quit() }
+				]
+			},
+			{
+				label: 'Edit',
+				submenu: [
+					{ role: 'undo' },
+					{ role: 'redo' },
+					{ type: 'separator' },
+					{ role: 'cut' },
+					{ role: 'copy' },
+					{ role: 'paste' },
+					{ role: 'pasteandmatchstyle' },
+					{ role: 'delete' },
+					{ role: 'selectall' }
+				]
 		}]));
 	}
 

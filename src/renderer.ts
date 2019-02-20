@@ -70,7 +70,7 @@ ipcRenderer.on('toggle-discord-reconnect', (event: any, toggle: boolean) => {
 	discordReconnect.style.display = toggle ? 'block' : 'none';
 });
 
-// Hacky way of checking for install update click since the element won't always exist.
+// Hacky way of checking for certain elements since they won't always exist.
 document.addEventListener('click', (event) => {
 	const element = event.target as HTMLElement;
 
