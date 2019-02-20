@@ -258,6 +258,11 @@ function updateRichPresence() : void
 
 				log.info('DiscordController stopped because the user is not online on PlayStation');
 			}
+
+			// Just update the form like this so we don't update rich presence.
+			mainWindow.webContents.send('presence-data', {
+				details: 'Offline'
+			});
 		}
 		else if (profile.primaryOnlineStatus === 'online')
 		{
@@ -377,11 +382,6 @@ function updateRichPresence() : void
 					log.error('Failed updating rich presence', err);
 				});
 			}
-
-			// Just update the form like this so we don't update rich presence.
-			mainWindow.webContents.send('presence-data', {
-				details: 'Offline'
-			});
 		}
 
 		mainWindow.webContents.send('profile-data', profile);
