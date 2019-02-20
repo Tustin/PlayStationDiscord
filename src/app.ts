@@ -613,6 +613,8 @@ ipcMain.on('mac-download', () => {
 ipcMain.on('discord-reconnect', () => {
 	log.info('Starting Discord reconnect');
 
+	toggleDiscordReconnect(false);
+
 	appEvent.emit('start-rich-presence');
 });
 
@@ -691,8 +693,7 @@ app.on('ready', () => {
 });
 
 app.on('window-all-closed', () => {
-	if (process.platform !== 'darwin')
-	{
-		app.quit();
-	}
+	// I know macOS likes to keep the program running if the user clicks X on a window
+	// But that is stupid behavior and makes no sense so we're just going to quit the application like normal.
+	app.quit();
 });
