@@ -67,7 +67,7 @@ axios.interceptors.request.use((request) => {
 	return request;
 });
 
-app.setAppUserModelId(process.execPath);
+app.setAppUserModelId('com.tustin.playstationdiscord');
 
 // Relevant: https://i.imgur.com/7QDkNqx.png
 function showMessageAndDie(message: string, detail?: string) : void
@@ -242,11 +242,10 @@ function spawnMainWindow() : void
 }
 
 let richPresenceRetries : number;
+let supportedTitleId : string;
 
 function updateRichPresence() : void
 {
-	let supportedTitleId : string;
-
 	playstationAccount.profile()
 	.then((profile) => {
 		if (profile.primaryOnlineStatus !== 'online')
