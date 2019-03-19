@@ -12,9 +12,9 @@ Discord Rich Presence for PlayStation 4, PlayStation 3, and PlayStation Vita gam
 
 ## Download
 
-### Windows and Mac OS
+### Windows and macOS
 
-You can download the compiled build for both of these platforms on the official [PlayStationDiscord page](https://tusticles.com/PlayStationDiscord/). Windows uses a proper installer and Mac OS has a dmg you can mount and install.
+You can download the compiled build for both of these platforms on the official [PlayStationDiscord page](https://tusticles.com/PlayStationDiscord/). Windows uses a proper installer and macOS has a dmg you can mount and install.
 
 ### Linux
 
