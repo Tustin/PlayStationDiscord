@@ -2,6 +2,8 @@ const { ipcRenderer } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const log = require('electron-log');
+const _store = require('electron-store');
+const store = new _store();
 
 const togglePresence = document.getElementById('togglePresence');
 const signOut = document.getElementById('signOut');
@@ -110,3 +112,12 @@ togglePresence.addEventListener('click', () => {
 signOut.addEventListener('click', () => {
 	ipcRenderer.send('signout');
 });
+
+window.onload = () => {
+	// Update initial state of rich presence button
+	if (!store.get('presenceEnabled', true))
+	{
+		togglePresence.classList.remove('red');
+		togglePresence.innerHTML = 'Enable Rich Presence';
+	}
+};
