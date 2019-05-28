@@ -520,7 +520,12 @@ ipcMain.on('toggle-presence', () => {
 
 	if (!newValue)
 	{
+		appEvent.emit('stop-rich-presence');
 		discordController.stop();
+	}
+	else
+	{
+		appEvent.emit('start-rich-presence');
 	}
 });
 
