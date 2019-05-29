@@ -347,6 +347,7 @@ function updateRichPresence() : void
 					}
 					else
 					{
+						log.warn('Game icon not found in supported games store', presence.titleName, presence.npTitleId);
 						supportedTitleId = undefined;
 					}
 				}

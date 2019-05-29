@@ -51,7 +51,7 @@ export class DiscordController
 				type: 'error',
 				title: 'PlayStationDiscord Error',
 				message: 'An error occurred while communicating with Discord',
-				detail: err.toString()
+				detail: 'Please check the log file for additonal information.'
 			});
 
 			appEvent.emit('discord-disconnected', err);
