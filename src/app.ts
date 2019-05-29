@@ -1,5 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain, nativeImage, shell, Tray, Menu, Notification } from 'electron';
-import { IPresence, IProfile } from './Model/ProfileModel';
+import { IPresence } from './Model/ProfileModel';
 import { IOAuthTokenResponse, } from './Model/AuthenticationModel';
 import { DiscordController } from './DiscordController';
 import {PlayStationConsole, PlayStationConsoleType } from './Consoles/PlayStationConsole';
@@ -274,7 +274,7 @@ function updateRichPresence() : void
 
 			if (previousPresence === undefined || platform !== previousPresence.platform)
 			{
-				log.info('Switching console to', platform);
+				log.info('Switching console to ', platform);
 
 				// Reset cached presence so we get fresh data.
 				previousPresence = undefined;
@@ -298,7 +298,7 @@ function updateRichPresence() : void
 
 				if (playstationConsole === undefined)
 				{
-					log.error(`No suitiable PlayStationConsole abstraction could be derived from platform type ${platformType}`);
+					log.error(`No suitable PlayStationConsole abstraction could be derived from platform type ${platformType}`);
 
 					return showMessageAndDie(`An error occurred when trying to assign/switch PlayStation console.`);
 				}
@@ -451,14 +451,6 @@ function sendUpdateStatus(data: any) : void
 	}
 }
 
-function toggleUpdateInfo(value: boolean) : void
-{
-	if (mainWindow)
-	{
-		mainWindow.webContents.send('update-toggle', value);
-	}
-}
-
 appEvent.on('logged-in', () => {
 	log.debug('logged-in event triggered');
 
@@ -518,7 +510,7 @@ ipcMain.on('toggle-presence', () => {
 	const newValue = !store.get('presenceEnabled');
 	store.set('presenceEnabled', newValue);
 
-	if (!newValue)
+	if (!newValue && discordController)
 	{
 		appEvent.emit('stop-rich-presence');
 		discordController.stop();

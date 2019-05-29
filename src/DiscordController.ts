@@ -84,7 +84,7 @@ export class DiscordController
 		return new Promise((resolve, reject) => {
 			if (!this.running())
 			{
-				reject('discord controller not running');
+				reject('Discord controller not running');
 			}
 			else
 			{
