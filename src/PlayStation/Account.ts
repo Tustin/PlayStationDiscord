@@ -84,7 +84,10 @@ export default class PlayStationAccount
 	public refresh() : Promise<IOAuthTokenResponse>
 	{
 		return new Promise<IOAuthTokenResponse>((resolve, reject) => {
-			const formData = PlayStationAccount.refreshTokenFormData(this.data);
+			// This is here because of some weird problem with queryString.stringify
+			// - Tustin 5/30/2019
+			let formData = {};
+			formData = PlayStationAccount.refreshTokenFormData(this.data);
 
 			axios.post<IOAuthTokenResponse>('https://auth.api.sonyentertainmentnetwork.com/2.0/oauth/token', queryString.stringify(formData), {
 				headers: {
