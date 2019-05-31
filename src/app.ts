@@ -27,6 +27,9 @@ const sonyLoginUrl : string = 'https://id.sonyentertainmentnetwork.com/signin/?s
 
 const logoIcon = nativeImage.createFromPath(path.join(__dirname, '../assets/images/logo.png'));
 
+// Mac (#41)
+const trayLogoIcon = nativeImage.createFromPath(path.join(__dirname, '../assets/images/trayLogo.png'));
+
 // Windows
 let mainWindow : BrowserWindow;
 let loginWindow : BrowserWindow;
@@ -165,7 +168,7 @@ function spawnMainWindow() : void
 		}
 	]);
 
-	const tray = new Tray(logoIcon);
+	const tray = new Tray(trayLogoIcon); // #41
 
 	tray.setContextMenu(contextMenu);
 	tray.setToolTip('PlayStationDiscord');
@@ -213,14 +216,33 @@ function spawnMainWindow() : void
 		mainWindow = null;
 	});
 
+	//  #44
+	mainWindow.on('show', () => {
+		if (process.platform === 'darwin') {
+			app.dock.show();
+		}
+	});
+
 	mainWindow.on('minimize', () => {
 		mainWindow.hide();
 
+		//  #44
+		if (process.platform === 'darwin') {
+			app.dock.hide();
+		}
+
 		if (Notification.isSupported())
 		{
+			let bodyText : string;
+
+			if (process.platform === 'darwin') {
+				bodyText = 'PlayStationDiscord is still running. You can restore it by clicking the icon in the menubar.';
+			} else {
+				bodyText = 'PlayStationDiscord is still running in the tray. You can restore it by double clicking the icon in the tray.';
+			}
 			const notification = new Notification({
 				title: 'Still Here!',
-				body: 'PlayStationDiscord is still running in the tray. You can restore it by double clicking the icon in the tray.',
+				body: bodyText,
 				icon: logoIcon
 			});
 
