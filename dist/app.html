@@ -1,79 +1,103 @@
-<head>
-    <link href="app.css" rel="stylesheet" type="text/css" />
-</head>
-<body>
-    <header>
-        <div id="app-icon">
-            <img src="../assets/images/logo.png" height="16" width="16" draggable="false" />
-        </div>
-        <div id="title">PlayStationDiscord</div>
-        <div id="controls">
-            <i id="minimize">
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <link href="app.css" rel="stylesheet" type="text/css" />
+        <link
+            href="https://fonts.googleapis.com/css?family=Open+Sans&display=swap"
+            rel="stylesheet"
+        />
+    </head>
+    <body>
+        <header>
+            <div id="app-icon">
+                <img
+                    src="../assets/images/logo.png"
                     height="16"
-                    viewBox="0 0 24 24"
-                >
-                    <path d="M6 19h12v2H6z" />
-                    <path fill="none" d="M0 0h24v24H0V0z" />
-                </svg>
-            </i>
-            <i id="maximize">
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
                     width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                >
-                    <path d="M0 0h24v24H0z" fill="none" />
-                    <path
-                        d="M18 4H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H6V6h12v12z"
-                    />
-                </svg>
-            </i>
-            <i id="close">
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                >
-                    <path
-                        d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
-                    />
-                    <path d="M0 0h24v24H0z" fill="none" />
-                </svg>
-            </i>
-        </div>
-    </header>
-    <main>
-        <div style="display: none;" id="update-info">
-            <div id="icon" draggable="false"></div>
-            <div id="text"></div>
-        </div>
-        <div class="playstation-info">
-            <img id="avatar" draggable="false" />
-            <div class="presence-details">
-                <h3 id="onlineId"></h3>
-                <p>Status: <span id="details">Offline</span></p>
-                <p id="state"></p>
+                    alt="PlayStation Discord"
+                    draggable="false"
+                />
             </div>
-        </div>
+            <div id="title">PlayStationDiscord</div>
+            <div id="controls">
+                <i id="minimize">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                    >
+                        <path d="M6 19h12v2H6z" />
+                        <path fill="none" d="M0 0h24v24H0V0z" />
+                    </svg>
+                </i>
+                <i id="maximize">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                    >
+                        <path d="M0 0h24v24H0z" fill="none" />
+                        <path
+                            d="M18 4H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H6V6h12v12z"
+                        />
+                    </svg>
+                </i>
+                <i id="close">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                        />
+                        <path d="M0 0h24v24H0z" fill="none" />
+                    </svg>
+                </i>
+            </div>
+        </header>
 
-        <div class="options">
-            <button class="ripple red" id="togglePresence">
-                Disable Rich Presence
-            </button>
-            <button class="ripple" id="signOut">
-                Sign Out
-            </button>
-        </div>
-        <footer>
-            <div style="display: none;" id="discord-reconnect"><img src='../assets/images/reload.svg' /> Reconnect to Discord</div>
+        <main>
+            <div style="display: none;" id="update-info">
+                <div id="icon" draggable="false"></div>
+                <div id="text"></div>
+            </div>
+            <div class="playstation-info">
+                <img id="avatar" alt="Avatar" draggable="false" />
+                <div class="presence-details">
+                    <h3 id="onlineId"></h3>
+                    <p id="details">Offline</p>
+                    <p id="state"></p>
+                </div>
+            </div>
+            <div class="options">
+                <button class="red" id="togglePresence">
+                    Disable
+                </button>
+                <button class="blurple" id="signOut">
+                    Sign Out
+                </button>
+            </div>
+        </main>
+
+        <footer style="display: none;" id="discord-reconnect">
+            <div id="icon" draggable="false">
+                <img
+                    src="../assets/images/reload.svg"
+                    alt="Reload"
+                    draggable="false"
+                />
+            </div>
+            <div id="text">
+                <p>Reconnect to Discord</p>
+            </div>
         </footer>
-    </main>
 
-    <script src="renderer.js"></script>
-    <script src="titlebar.js"></script>
-</body>
+        <script src="renderer.js"></script>
+        <script src="titlebar.js"></script>
+    </body>
+</html>

@@ -98,12 +98,14 @@ togglePresence.addEventListener('click', () => {
 	if (togglePresence.classList.contains('red'))
 	{
 		togglePresence.classList.remove('red');
-		togglePresence.innerHTML = 'Enable Rich Presence';
+		togglePresence.classList.add('blurple');
+		togglePresence.innerHTML = 'Enable';
 	}
 	else
 	{
+		togglePresence.classList.remove('blurple');
 		togglePresence.classList.add('red');
-		togglePresence.innerHTML = 'Disable Rich Presence';
+		togglePresence.innerHTML = 'Disable';
 	}
 
 	ipcRenderer.send('toggle-presence');
@@ -118,6 +120,6 @@ window.onload = () => {
 	if (!store.get('presenceEnabled', true))
 	{
 		togglePresence.classList.remove('red');
-		togglePresence.innerHTML = 'Enable Rich Presence';
+		togglePresence.innerHTML = 'Enable';
 	}
 };
