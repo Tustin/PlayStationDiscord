@@ -31,6 +31,7 @@ body {
 
         #controls {
             display: grid;
+            z-index: 69;
             -webkit-app-region: no-drag;
 
             .control {
