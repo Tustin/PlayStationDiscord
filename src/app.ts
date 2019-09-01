@@ -568,7 +568,7 @@ autoUpdater.on('download-progress', ({ percent }) => {
 
 autoUpdater.on('checking-for-update', () => {
 	sendUpdateStatus({
-		message: 'Checking for new update...',
+		message: 'Checking for updates',
 		icon: 'bars'
 	});
 });

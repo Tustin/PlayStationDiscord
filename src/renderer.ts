@@ -12,6 +12,7 @@ const updateIcon = updateInfo.querySelector('#icon') as HTMLImageElement;
 const updateText = updateInfo.querySelector('#text');
 const installLink = document.getElementById('install');
 const discordReconnect = document.getElementById('discord-reconnect');
+const packageJson = require('../package.json');
 
 ipcRenderer.on('profile-data', (event: any, data: any) => {
 	const image : HTMLImageElement = document.getElementById('avatar') as HTMLImageElement;
@@ -116,6 +117,8 @@ signOut.addEventListener('click', () => {
 });
 
 window.onload = () => {
+	document.getElementById('title').innerHTML = 'PlayStationDiscord ' + (packageJson.version || '');
+
 	// Update initial state of rich presence button
 	if (!store.get('presenceEnabled', true))
 	{
