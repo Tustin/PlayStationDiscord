@@ -42,6 +42,18 @@ button {
         }
     }
 
+    &.warning {
+        background-color: $warning-btn;
+
+        &:hover {
+            background-color: $warning-btn-hover;
+        }
+
+        &:active {
+            background-color: $warning-btn-active;
+        }
+    }
+
     &.blurple {
         background-color: $blurple;
 
