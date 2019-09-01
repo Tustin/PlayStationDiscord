@@ -109,6 +109,7 @@ body {
             top: 32px;
             z-index: 69;
             line-height: 32px;
+            text-align: left;
             background-color: $whitespace-primary;
             -webkit-user-select: none;
 
@@ -119,6 +120,8 @@ body {
 
             #icon {
                 display: flex;
+                width: 32px;
+                height: 32px;
                 grid-column: 1;
                 align-items: center;
                 justify-content: center;
