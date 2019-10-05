@@ -1,0 +1,10 @@
+name: PlayStationDiscord Sanity Check
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    name: Linter
+    runs-on: ubuntu-latest
+    steps:
+      - run: yarn lint
