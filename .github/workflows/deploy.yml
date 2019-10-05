@@ -1,0 +1,23 @@
+name: PlayStationDiscord Deploy
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  draft-release:
+    name:  Github Create Release
+    uses: frankjuniorr/github-create-release-action@v2.1.1
+
+  build-win:
+    name: PlayStationDiscord Windows builder
+    needs: draft-release
+    runs-on: windows-latest
+    run: yarn release --win
+
+  build-mac:
+    name: PlayStationDiscord macOS builder
+    needs: draft-release
+    runs-on: macOS-latest
+    run: yarn release --mac
