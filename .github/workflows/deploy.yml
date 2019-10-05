@@ -1,12 +1,16 @@
 name: PlayStationDiscord Deploy
 
-on:
-  pull_request:
-    branches:
-      - master
-  push:
-    branches:
-      - master
+# on:
+#   pull_request:
+#     branches:
+#       - master
+#   push:
+#     branches:
+#       - master
+
+# Temp
+on: [push, pull_request]
+
 
 jobs:
   draft-release:
@@ -28,6 +32,8 @@ jobs:
     needs: draft-release
     runs-on: windows-latest
     steps:
+      - uses: actions/checkout@v1
+      - run: yarn install
       - run: yarn release --win
 
   build-mac:
@@ -35,4 +41,6 @@ jobs:
     needs: draft-release
     runs-on: macOS-latest
     steps:
+      - uses: actions/checkout@v1
+      - run: yarn install
       - run: yarn release --mac
