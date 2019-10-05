@@ -11,9 +11,17 @@ on:
 jobs:
   draft-release:
     name:  Github Create Release
-    uses: frankjuniorr/github-create-release-action@v2.1.1
-    env:
-      GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Filters for Master branch
+        uses: actions/bin/filter@master
+        with:
+          args: branch master
+      - name: 'Github Create Release'
+        uses: frankjuniorr/github-create-release-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-win:
     name: PlayStationDiscord Windows builder
