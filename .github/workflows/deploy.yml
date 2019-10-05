@@ -1,6 +1,9 @@
 name: PlayStationDiscord Deploy
 
 on:
+  pull_request:
+    branches:
+      - master
   push:
     branches:
       - master
@@ -9,15 +12,19 @@ jobs:
   draft-release:
     name:  Github Create Release
     uses: frankjuniorr/github-create-release-action@v2.1.1
+    env:
+      GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
   build-win:
     name: PlayStationDiscord Windows builder
     needs: draft-release
     runs-on: windows-latest
-    run: yarn release --win
+    steps:
+      - run: yarn release --win
 
   build-mac:
     name: PlayStationDiscord macOS builder
     needs: draft-release
     runs-on: macOS-latest
-    run: yarn release --mac
+    steps:
+      - run: yarn release --mac
