@@ -13,17 +13,16 @@ on: [push, pull_request]
 
 
 jobs:
-  draft-release:
-    name:  Github Create Release
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - uses: Tustin/github-create-release-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+  # draft-release:
+  #   name:  Github Create Release
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v1
+  #     - uses: Tustin/github-create-release-action@master
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   build-win:
-    name: PlayStationDiscord Windows builder
+    name: Windows Build
     needs: draft-release
     runs-on: windows-latest
     steps:
@@ -32,7 +31,7 @@ jobs:
       - run: yarn release --win
 
   build-mac:
-    name: PlayStationDiscord macOS builder
+    name: macOS Build
     needs: draft-release
     runs-on: macOS-latest
     steps:
