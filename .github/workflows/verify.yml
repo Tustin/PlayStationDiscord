@@ -7,4 +7,6 @@ jobs:
     name: Linter
     runs-on: ubuntu-latest
     steps:
-      - run: yarn lint
+      - run: |
+      yarn install
+      yarn lint
