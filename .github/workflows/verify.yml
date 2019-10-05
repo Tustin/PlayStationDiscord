@@ -7,7 +7,7 @@ jobs:
     name: Linter
     runs-on: ubuntu-latest
     steps:
-    - name: Install dependencies and lint
-      run: |
-        yarn install
-        yarn lint
+      - uses: actions/checkout@v1
+      - name: Install dependencies and lint
+      - run: yarn install
+      - run: yarn lint
