@@ -17,7 +17,8 @@ import queryString = require('query-string');
 import log = require('electron-log');
 import url = require('url');
 import path = require('path');
-import isDev = require('electron-is-dev');
+
+const isDev = process.env.NODE_ENV === 'dev';
 
 const supportedGames = require('./SupportedGames');
 
