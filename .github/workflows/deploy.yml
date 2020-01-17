@@ -1,15 +1,12 @@
 name: PlayStationDiscord Deploy
 
 on:
-  # pull_request:
-  #   branches:
-  #     - master
+  pull_request:
+    branches:
+      - master
   push:
     branches:
-      - workflow/deploy
-
-# Temp
-# on: [push, pull_request]
+      - master
 
 jobs:
   build:
