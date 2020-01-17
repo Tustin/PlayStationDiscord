@@ -1,6 +1,6 @@
 {
   "name": "playstationdiscord",
-  "version": "3.0.3",
+  "version": "3.1.0",
   "description": "Discord Rich Presence for PlayStation consoles.",
   "main": "./dist/app.js",
   "build": {
@@ -39,7 +39,7 @@
     "publish": {
       "provider": "github",
       "releaseType": "draft",
-      "vPrefixedTagName": false
+      "vPrefixedTagName": true
     }
   },
   "scripts": {
@@ -50,6 +50,7 @@
     "build:icons": "electron-icon-maker -i ./assets/images/logo.png -o ./build/",
     "build:win": "npm run compile && npm run build:icons && electron-builder build --windows",
     "build:mac": "npm run compile && npm run build:icons && electron-builder build --mac",
+    "build": "npm run compile && npm run build:icons",
     "release": "npm run compile && npm run build:icons && electron-builder build",
     "test": "npm run compile && npm run build:icons && electron-packager . --asar --overwrite --out=test && cross-env NODE_ENV=dev ./test/playstationdiscord-win32-x64/playstationdiscord.exe"
   },
@@ -92,7 +93,7 @@
     "@types/query-string": "^6.2.0",
     "@types/semver": "^5.5.0",
     "electron": "^7.1.9",
-    "electron-builder": "^20.38.5",
+    "electron-builder": "^22.2.0",
     "electron-icon-maker": "^0.0.4",
     "electron-packager": "^13.0.1",
     "register-scheme": "^0.0.2",
