@@ -39,7 +39,7 @@
     "publish": {
       "provider": "github",
       "releaseType": "draft",
-      "vPrefixedTagName": true
+      "vPrefixedTagName": false
     }
   },
   "scripts": {
