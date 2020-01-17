@@ -1,40 +1,36 @@
 name: PlayStationDiscord Deploy
 
-# on:
-#   pull_request:
-#     branches:
-#       - master
-#   push:
-#     branches:
-#       - master
+on:
+  # pull_request:
+  #   branches:
+  #     - master
+  push:
+    branches:
+      - workflow/deploy
 
 # Temp
-on: [push, pull_request]
-
+# on: [push, pull_request]
 
 jobs:
-  # draft-release:
-  #   name:  Github Create Release
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v1
-  #     - uses: Tustin/github-create-release-action@master
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  build-win:
-    name: Windows Build
-    needs: draft-release
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v1
-      - run: yarn install
-      - run: yarn release --win
+  build:
 
-  build-mac:
-    name: macOS Build
-    needs: draft-release
-    runs-on: macOS-latest
+    runs-on: ${{ matrix.os }}
+
+
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+
+    
     steps:
-      - uses: actions/checkout@v1
-      - run: yarn install
-      - run: yarn release --mac
+      - name: Checkout code
+        uses: actions/checkout@v1
+      - name: Setup Node 12.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12.x
+      - name: Build and release
+        uses: samuelmeuli/action-electron-builder@v1
+        with:
+          github_token: ${{ secrets.github_token }}
+          release: ${{ startsWith(github.ref, 'refs/tags/v') }}
