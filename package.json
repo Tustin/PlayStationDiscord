@@ -93,7 +93,7 @@
     "@types/query-string": "^6.2.0",
     "@types/semver": "^5.5.0",
     "electron": "^7.1.9",
-    "electron-builder": "^20.38.5",
+    "electron-builder": "^22.2.0",
     "electron-icon-maker": "^0.0.4",
     "electron-packager": "^13.0.1",
     "register-scheme": "^0.0.2",
