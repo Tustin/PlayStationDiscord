@@ -50,6 +50,7 @@
     "build:icons": "electron-icon-maker -i ./assets/images/logo.png -o ./build/",
     "build:win": "npm run compile && npm run build:icons && electron-builder build --windows",
     "build:mac": "npm run compile && npm run build:icons && electron-builder build --mac",
+    "build": "npm run compile && npm run build:icons",
     "release": "npm run compile && npm run build:icons && electron-builder build",
     "test": "npm run compile && npm run build:icons && electron-packager . --asar --overwrite --out=test && cross-env NODE_ENV=dev ./test/playstationdiscord-win32-x64/playstationdiscord.exe"
   },
