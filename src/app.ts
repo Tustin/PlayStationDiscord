@@ -82,7 +82,7 @@ function showMessageAndDie(message: string, detail?: string) : void
 		message,
 		detail,
 		icon: logoIcon
-	}).then(() => {
+	}).finally(() => {
 		app.quit();
 	});
 }
@@ -198,7 +198,9 @@ function spawnMainWindow() : void
 	mainWindow.webContents.on('did-finish-load', () => {
 		if (!isDev)
 		{
-			autoUpdater.checkForUpdates();
+			autoUpdater.checkForUpdates().catch((reason) => {
+				log.error('Failed checking for update', reason);
+			});
 		}
 		else
 		{
