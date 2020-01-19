@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, nativeImage, shell, Tray, Menu, Notification } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, nativeImage, shell, Tray, Menu, Notification, MenuItemConstructorOptions, MenuItem } from 'electron';
 import { IPresence } from './Model/ProfileModel';
 import { IOAuthTokenResponse, } from './Model/AuthenticationModel';
 import { DiscordController } from './DiscordController';
@@ -17,7 +17,8 @@ import queryString = require('query-string');
 import log = require('electron-log');
 import url = require('url');
 import path = require('path');
-import isDev = require('electron-is-dev');
+
+const isDev = process.env.NODE_ENV === 'dev';
 
 const supportedGames = require('./SupportedGames');
 
@@ -81,7 +82,7 @@ function showMessageAndDie(message: string, detail?: string) : void
 		message,
 		detail,
 		icon: logoIcon
-	}, () => {
+	}).finally(() => {
 		app.quit();
 	});
 }
@@ -197,7 +198,9 @@ function spawnMainWindow() : void
 	mainWindow.webContents.on('did-finish-load', () => {
 		if (!isDev)
 		{
-			autoUpdater.checkForUpdates();
+			autoUpdater.checkForUpdates().catch((reason) => {
+				log.error('Failed checking for update', reason);
+			});
 		}
 		else
 		{
@@ -507,7 +510,9 @@ appEvent.on('tokens-refresh-failed', (err) => {
 		title: 'PlayStationDiscord Error',
 		message: 'An error occurred while trying to refresh your authorization tokens. You will need to login again.',
 		icon: logoIcon
-	}, () => signoutCleanup());
+	}).then(() => {
+		signoutCleanup();
+	});
 });
 
 appEvent.on('start-rich-presence', () => {
@@ -544,16 +549,17 @@ ipcMain.on('toggle-presence', () => {
 	}
 });
 
-ipcMain.on('signout', () => {
-	dialog.showMessageBox(mainWindow, {
+// Needs Testing
+ipcMain.on('signout', async () => {
+	await dialog.showMessageBox(mainWindow, {
 		type: 'question',
 		title: 'PlayStationDiscord Alert',
 		buttons: ['Yes', 'No'],
 		defaultId: 0,
 		message: 'Are you sure you want to sign out?',
 		icon: logoIcon
-	}, (response) => {
-		if (response === 0)
+	}).then((response) => {
+		if (response.response === 0)
 		{
 			signoutCleanup();
 		}
@@ -680,9 +686,9 @@ app.on('ready', () => {
 					{ role: 'cut' },
 					{ role: 'copy' },
 					{ role: 'paste' },
-					{ role: 'pasteandmatchstyle' },
+					{ role: 'pasteAndMatchStyle' },
 					{ role: 'delete' },
-					{ role: 'selectall' }
+					{ role: 'selectAll' }
 				]
 		}]));
 	}

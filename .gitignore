@@ -6,3 +6,4 @@ build/*
 test/*
 *.css
 *.log
+.vscode/
