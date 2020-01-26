@@ -1,6 +1,6 @@
 # PlayStationDiscord
 
-[![Build Status](https://travis-ci.org/Tustin/PlayStationDiscord.svg?branch=master)](https://travis-ci.org/Tustin/PlayStationDiscord)
+[![Actions Status](https://github.com/Tustin/PlayStationDiscord/workflows/PlayStationDiscord%20Deploy/badge.svg)](https://github.com/Tustin/PlayStationDiscord/actions)
 ![License](https://img.shields.io/github/license/Tustin/PlayStationDiscord.svg?style=flat)
 [![Discord Shield](https://discordapp.com/api/guilds/546478525629071386/widget.png?style=shield)](https://discord.gg/sdDY5PJ)
 
