@@ -82,9 +82,9 @@ function showMessageAndDie(message: string, detail?: string) : void
 		message,
 		detail,
 		icon: logoIcon
-	}).finally(() => {
-		app.quit();
 	});
+
+	app.quit();
 }
 
 function spawnLoginWindow() : void
@@ -513,9 +513,9 @@ appEvent.on('tokens-refresh-failed', (err) => {
 		title: 'PlayStationDiscord Error',
 		message: 'An error occurred while trying to refresh your authorization tokens. You will need to login again.',
 		icon: logoIcon
-	}).then(() => {
-		signoutCleanup();
 	});
+
+	signoutCleanup();
 });
 
 appEvent.on('start-rich-presence', () => {
@@ -554,19 +554,20 @@ ipcMain.on('toggle-presence', () => {
 
 // Needs Testing
 ipcMain.on('signout', async () => {
-	await dialog.showMessageBox(mainWindow, {
+
+	const response = dialog.showMessageBox(mainWindow, {
 		type: 'question',
 		title: 'PlayStationDiscord Alert',
 		buttons: ['Yes', 'No'],
 		defaultId: 0,
 		message: 'Are you sure you want to sign out?',
 		icon: logoIcon
-	}).then((response) => {
-		if (response.response === 0)
-		{
-			signoutCleanup();
-		}
 	});
+
+	if (response === 0)
+	{
+		signoutCleanup();
+	}
 });
 
 autoUpdater.on('download-progress', ({ percent }) => {
