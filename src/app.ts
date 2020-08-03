@@ -164,6 +164,10 @@ function spawnMainWindow() : void
 			click:  () => mainWindow.show()
 		},
 		{
+			label: 'Toggle Presence',
+			click:  () => ipcMain.emit('toggle-presence')
+		},
+		{
 			label: 'Quit',
 			click:  () => {
 				mainWindow.destroy();
