@@ -1,5 +1,6 @@
 export enum PlayStationConsoleType
 {
+	PS5,
 	PS4,
 	PS3,
 	PSVITA

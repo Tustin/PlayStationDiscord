@@ -6,6 +6,7 @@ import {PlayStationConsole, PlayStationConsoleType } from './Consoles/PlayStatio
 import { IDiscordPresenceModel, IDiscordPresenceUpdateOptions } from './Model/DiscordPresenceModel';
 import { autoUpdater } from 'electron-updater';
 import axios from 'axios';
+import PlayStation5 from './Consoles/PlayStation5';
 import PlayStation4 from './Consoles/PlayStation4';
 import PlayStation3 from './Consoles/PlayStation3';
 import PlayStationVita from './Consoles/PlayStationVita';
@@ -433,22 +434,19 @@ function updateRichPresence() : void
 
 function getConsoleFromType(type: PlayStationConsoleType) : PlayStationConsole
 {
-	if (type === PlayStationConsoleType.PS4)
+	switch (type)
 	{
-		return new PlayStation4();
+		case PlayStationConsoleType.PS5:
+			return new PlayStation5();
+		case PlayStationConsoleType.PS4:
+			return new PlayStation4();
+		case PlayStationConsoleType.PS4:
+			return new PlayStation3();
+		case PlayStationConsoleType.PSVITA:
+			return new PlayStationVita();
+		default:
+			return undefined;
 	}
-
-	if (type === PlayStationConsoleType.PS3)
-	{
-		return new PlayStation3();
-	}
-
-	if (type === PlayStationConsoleType.PSVITA)
-	{
-		return new PlayStationVita();
-	}
-
-	return undefined;
 }
 
 // For some reason, despite Timeout being a reference, it doesn't seem like you can undefine it by reference.

@@ -11,6 +11,7 @@ interface IGame
 
 interface ISupportedGames
 {
+	ps5 : IGame[];
 	ps4 : IGame[];
 	ps3 : IGame[];
 	vita : IGame[];
