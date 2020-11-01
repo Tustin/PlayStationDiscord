@@ -24,7 +24,7 @@ const supportedGames = require('./SupportedGames');
 
 const store = new _store();
 
-const sonyLoginUrl : string = 'https://id.sonyentertainmentnetwork.com/signin/?service_entity=urn:service-entity:psn&response_type=code&client_id=ba495a24-818c-472b-b12d-ff231c1b5745&redirect_uri=https://remoteplay.dl.playstation.net/remoteplay/redirect&scope=psn:clientapp&request_locale=en_US&ui=pr&service_logo=ps&layout_type=popup&smcid=remoteplay&PlatformPrivacyWs1=exempt&error=login_required&error_code=4165&error_description=User+is+not+authenticated&no_captcha=false';
+const sonyLoginUrl : string = 'https://ca.account.sony.com/api/v1/oauth/authorize?service_entity=urn:service-entity:psn&response_type=code&client_id=ba495a24-818c-472b-b12d-ff231c1b5745&redirect_uri=https://remoteplay.dl.playstation.net/remoteplay/redirect&scope=psn:clientapp%20referenceDataService:countryConfig.read&request_locale=en_US&ui=pr&service_logo=ps&layout_type=popup&smcid=remoteplay&prompt=always&PlatformPrivacyWs1=&';
 
 const logoIcon = nativeImage.createFromPath(path.join(__dirname, '../assets/images/logo.png'));
 
@@ -568,7 +568,7 @@ ipcMain.on('signout', async () => {
 		icon: logoIcon
 	});
 
-	if (response === 0)
+	if (!response)
 	{
 		signoutCleanup();
 	}
