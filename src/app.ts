@@ -1,5 +1,4 @@
 import { app, BrowserWindow, dialog, ipcMain, nativeImage, shell, Tray, Menu, Notification, MenuItemConstructorOptions, MenuItem, session } from 'electron';
-import { IPresence } from './Model/ProfileModel';
 import { IOAuthTokenResponse, } from './Model/AuthenticationModel';
 import { DiscordController } from './DiscordController';
 import {PlayStationConsole, PlayStationConsoleType } from './Consoles/PlayStationConsole';
@@ -18,6 +17,7 @@ import queryString = require('query-string');
 import log = require('electron-log');
 import url = require('url');
 import path = require('path');
+import { IBasicPresence } from './Model/PresenceModel';
 
 const isDev = process.env.NODE_ENV === 'dev';
 
@@ -41,7 +41,7 @@ let playstationAccount : PlayStationAccount;
 
 // Discord stuff
 let discordController : DiscordController;
-let previousPresence : IPresence;
+let previousPresence : IBasicPresence;
 
 // Loop Ids
 let updateRichPresenceLoop : NodeJS.Timeout;
@@ -213,6 +213,14 @@ function spawnMainWindow() : void
 			log.debug('Skipping update check because app is running in dev mode');
 		}
 
+		playstationAccount.profile()
+		.then((profile) => {
+			log.debug('Got PSN profile info', profile);
+			mainWindow.webContents.send('profile-data', profile);
+		}).then((err) => {
+			log.error('Failed fetching PSN profile', err);
+		});
+
 		appEvent.emit('start-rich-presence');
 	});
 
@@ -277,9 +285,9 @@ let supportedTitleId : string;
 
 function updateRichPresence() : void
 {
-	playstationAccount.profile()
-	.then((profile) => {
-		if (profile.primaryOnlineStatus !== 'online')
+	playstationAccount.presences()
+	.then((presence) => {
+		if (presence.primaryPlatformInfo.onlineStatus !== 'online')
 		{
 			if (discordController && discordController.running())
 			{
@@ -294,16 +302,16 @@ function updateRichPresence() : void
 				details: 'Offline'
 			});
 		}
-		else if (profile.primaryOnlineStatus === 'online')
+		else if (presence.primaryPlatformInfo.onlineStatus === 'online')
 		{
 			let discordRichPresenceData : IDiscordPresenceModel;
 			let discordRichPresenceOptionsData : IDiscordPresenceUpdateOptions;
 
-			// We really should start handling multiple presences properly at this point...
-			const presence = profile.presences[0];
-			const platform = presence.platform;
+			const platform = presence.primaryPlatformInfo.platform;
+			const titleInfo = presence.gameTitleInfoList[0];
+			const previousPresenceTitleInfo = previousPresence.gameTitleInfoList[0];
 
-			if (previousPresence === undefined || platform !== previousPresence.platform)
+			if (previousPresence === undefined || platform !== previousPresence.primaryPlatformInfo.platform)
 			{
 				log.info('Switching console to ', platform);
 
@@ -316,6 +324,7 @@ function updateRichPresence() : void
 					discordController = undefined;
 				}
 
+				// @TODO: Check this to make sure platform case matches the consoletype keys.
 				const platformType = PlayStationConsoleType[platform as (keyof typeof PlayStationConsoleType)];
 
 				if (platformType === undefined)
@@ -341,10 +350,10 @@ function updateRichPresence() : void
 
 			// Setup previous presence with the current presence if it's empty.
 			// Update status if the titleId has changed.
-			if (previousPresence === undefined || previousPresence.npTitleId !== presence.npTitleId)
+			if (previousPresence === undefined || previousPresenceTitleInfo.npTitleId !== titleInfo.npTitleId)
 			{
 				// See if we're actually playing a title.
-				if (presence.npTitleId === undefined)
+				if (titleInfo.npTitleId === undefined)
 				{
 					discordRichPresenceData = {
 						details: 'Online',
@@ -359,13 +368,13 @@ function updateRichPresence() : void
 				else
 				{
 					discordRichPresenceData = {
-						details: presence.titleName,
-						state: presence.gameStatus,
+						details: titleInfo.titleName,
+						state: titleInfo.gameStatus,
 						startTimestamp: Date.now(),
-						largeImageText: presence.titleName
+						largeImageText: titleInfo.titleName
 					};
 
-					log.info('Game has switched', presence.titleName);
+					log.info('Game has switched', titleInfo.titleName);
 
 					const discordFriendly = supportedGames.get(presence);
 
@@ -378,18 +387,18 @@ function updateRichPresence() : void
 					}
 					else
 					{
-						log.warn('Game icon not found in supported games store', presence.titleName, presence.npTitleId);
+						log.warn('Game icon not found in supported games store', titleInfo.titleName, titleInfo.npTitleId);
 						supportedTitleId = undefined;
 					}
 				}
 			}
 			// Update if game status has changed.
-			else if (previousPresence === undefined || previousPresence.gameStatus !== presence.gameStatus)
+			else if (previousPresence === undefined || previousPresenceTitleInfo.gameStatus !== titleInfo.gameStatus)
 			{
 				discordRichPresenceData = {
-					details: presence.titleName,
-					state: presence.gameStatus,
-					largeImageText: presence.titleName
+					details: titleInfo.titleName,
+					state: titleInfo.gameStatus,
+					largeImageText: titleInfo.titleName
 				};
 
 				if (supportedTitleId !== undefined)
@@ -397,7 +406,7 @@ function updateRichPresence() : void
 					discordRichPresenceData.largeImageKey = supportedTitleId;
 				}
 
-				log.info('Game status has changed', presence.gameStatus);
+				log.info('Game status has changed', titleInfo.gameStatus);
 			}
 
 			// Only send a rich presence update if we have something new and it's enabled.
@@ -415,11 +424,11 @@ function updateRichPresence() : void
 			}
 		}
 
-		mainWindow.webContents.send('profile-data', profile);
+		mainWindow.webContents.send('presence-data', presence);
 		richPresenceRetries = 0;
 	})
 	.catch((err) => {
-		log.error('Failed fetching PSN profile', err);
+		log.error('Failed fetching PSN presence', err);
 
 		if (++richPresenceRetries === 5)
 		{

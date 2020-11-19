@@ -1,7 +1,7 @@
 import _store = require('electron-store');
 import log = require('electron-log');
 import axios from 'axios';
-import { IPresence } from './Model/ProfileModel';
+import { IBasicPresence } from './Model/PresenceModel';
 
 interface IGame
 {
@@ -67,10 +67,12 @@ class SupportedGames
 		});
 	}
 
-	public get(presence: IPresence) : IGame
+	public get(presence: IBasicPresence) : IGame
 	{
 		return this.store.get('consoles.ps4').find((game: IGame) => {
-			return (game.titleId.toLowerCase() === presence.npTitleId.toLowerCase()) || (game.name.toLowerCase() === presence.titleName.toLowerCase());
+			const titleInfo = presence.gameTitleInfoList[0];
+
+			return (game.titleId.toLowerCase() === titleInfo.npTitleId.toLowerCase()) || (game.name.toLowerCase() === titleInfo.titleName.toLowerCase());
 		});
 	}
 }

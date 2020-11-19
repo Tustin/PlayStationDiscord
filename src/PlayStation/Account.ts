@@ -1,7 +1,8 @@
 import { IOAuthTokenRefreshRequest, IOAuthTokenResponse, isOAuthTokenResponse } from '../Model/AuthenticationModel';
 import axios from 'axios';
 import appEvent from '../Events';
-import { IProfile } from '../Model/ProfileModel';
+import { IProfileModel } from '../Model/ProfileModel';
+import { IBasicPresence, IPresenceModel } from '../Model/PresenceModel';
 
 import queryString = require('query-string');
 
@@ -114,8 +115,6 @@ export default class PlayStationAccount
 	public refresh() : Promise<IOAuthTokenResponse>
 	{
 		return new Promise<IOAuthTokenResponse>((resolve, reject) => {
-			// This is here because of some weird problem with queryString.stringify
-			// - Tustin 5/30/2019
 			let formData = {};
 			formData = PlayStationAccount.refreshTokenFormData(this.data);
 
@@ -145,12 +144,12 @@ export default class PlayStationAccount
 		});
 	}
 
-	public profile() : Promise<IProfile>
+	public presences() : Promise<IBasicPresence>
 	{
-		return new Promise<IProfile>((resolve, reject) => {
+		return new Promise<IBasicPresence>((resolve, reject) => {
 			const accessToken = this.data.access_token;
 
-			axios.get('https://us-prof.np.community.playstation.net/userProfile/v1/users/me/profile2?fields=onlineId,avatarUrls,plus,primaryOnlineStatus,presences(@titleInfo)&avatarSizes=m,xl&titleIconSize=s', {
+			axios.get<IPresenceModel>('https://m.np.playstation.net/api/userProfile/v1/internal/users/me/basicPresences?type=primary', {
 				headers: {
 					Authorization: `Bearer ${accessToken}`
 				}
@@ -158,16 +157,46 @@ export default class PlayStationAccount
 			.then((response) => {
 				const responseBody = response.data;
 
-				appEvent.emit('profile-data', responseBody.profile);
+				appEvent.emit('presence-data', responseBody.basicPresence);
 
-				return resolve(responseBody.profile);
+				return resolve(responseBody.basicPresence);
+			})
+			.catch((err) => {
+				appEvent.emit('presence-data-failed', err);
+
+				if (err.response)
+				{
+					return reject(err.response.error);
+				}
+
+				return reject(err);
+			});
+		});
+	}
+
+	public profile() : Promise<IProfileModel>
+	{
+		return new Promise<IProfileModel>((resolve, reject) => {
+			const accessToken = this.data.access_token;
+
+			axios.get<IProfileModel>('https://m.np.playstation.net/api/userProfile/v1/internal/users/me/profiles', {
+				headers: {
+					Authorization: `Bearer ${accessToken}`
+				}
+			})
+			.then((response) => {
+				const responseBody = response.data;
+
+				appEvent.emit('profile-data', responseBody);
+
+				return resolve(responseBody);
 			})
 			.catch((err) => {
 				appEvent.emit('profile-data-failed', err);
 
 				if (err.response)
 				{
-					return reject(err.response.data);
+					return reject(err.response.error);
 				}
 
 				return reject(err);
