@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, nativeImage, shell, Tray, Menu, Notification, MenuItemConstructorOptions, MenuItem } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, nativeImage, shell, Tray, Menu, Notification, MenuItemConstructorOptions, MenuItem, session } from 'electron';
 import { IPresence } from './Model/ProfileModel';
 import { IOAuthTokenResponse, } from './Model/AuthenticationModel';
 import { DiscordController } from './DiscordController';
@@ -25,7 +25,7 @@ const supportedGames = require('./SupportedGames');
 
 const store = new _store();
 
-const sonyLoginUrl : string = 'https://ca.account.sony.com/api/v1/oauth/authorize?service_entity=urn:service-entity:psn&response_type=code&client_id=ba495a24-818c-472b-b12d-ff231c1b5745&redirect_uri=https://remoteplay.dl.playstation.net/remoteplay/redirect&scope=psn:clientapp%20referenceDataService:countryConfig.read&request_locale=en_US&ui=pr&service_logo=ps&layout_type=popup&smcid=remoteplay&prompt=always&PlatformPrivacyWs1=&';
+const sonyLoginUrl : string = 'https://ca.account.sony.com/api/authz/v3/oauth/authorize?response_type=code&app_context=inapp_ios&device_profile=mobile&extraQueryParams=%7B%0A%20%20%20%20PlatformPrivacyWs1%20%3D%20minimal%3B%0A%7D&token_format=jwt&access_type=offline&scope=psn%3Amobile.v1%20psn%3Aclientapp&service_entity=urn%3Aservice-entity%3Apsn&ui=pr&smcid=psapp%253Asettings-entrance&darkmode=true&redirect_uri=com.playstation.PlayStationApp%3A%2F%2Fredirect&support_scheme=sneiprls&client_id=ac8d161a-d966-4728-b0ea-ffec22f69edc&duid=0000000d0004008088347AA0C79542D3B656EBB51CE3EBE1&device_base_font_size=10&elements_visibility=no_aclink&service_logo=ps';
 
 const logoIcon = nativeImage.createFromPath(path.join(__dirname, '../assets/images/logo.png'));
 
@@ -66,11 +66,11 @@ if (!instanceLock)
 	app.quit();
 }
 
-axios.interceptors.request.use((request) => {
-	log.debug('Firing axios request:', request);
+// axios.interceptors.request.use((request) => {
+// 	log.debug('Firing axios request:', request);
 
-	return request;
-});
+// 	return request;
+// });
 
 app.setAppUserModelId('com.tustin.playstationdiscord');
 
@@ -113,12 +113,10 @@ function spawnLoginWindow() : void
 		userAgent: 'Mozilla/5.0'
 	});
 
-	loginWindow.webContents.on('did-finish-load', () => {
-		const browserUrl : string = loginWindow.webContents.getURL();
-
-		if (browserUrl.startsWith('https://remoteplay.dl.playstation.net/remoteplay/redirect'))
+	loginWindow.webContents.on('will-redirect', (event, url) => {
+		if (url.startsWith('com.playstation.playstationapp://redirect/'))
 		{
-			const query : string = queryString.extract(browserUrl);
+			const query : string = queryString.extract(url);
 			const items : any = queryString.parse(query);
 
 			if (!items.code)
@@ -701,7 +699,7 @@ app.on('ready', () => {
 
 	if (store.has('tokens'))
 	{
-		PlayStationAccount.login(store.get('tokens') as IOAuthTokenResponse)
+		PlayStationAccount.loginWithRefresh(store.get('tokens') as IOAuthTokenResponse)
 		.then((account) => {
 			playstationAccount = account;
 

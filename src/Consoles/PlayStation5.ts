@@ -1,6 +1,6 @@
 import { PlayStationConsoleType, PlayStationConsole } from './PlayStationConsole';
 
-export default class PlayStation4 extends PlayStationConsole
+export default class PlayStation5 extends PlayStationConsole
 {
 	public constructor()
 	{

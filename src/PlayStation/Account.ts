@@ -1,26 +1,24 @@
-import { IOAuthTokenResponse, isOAuthTokenResponse } from '../Model/AuthenticationModel';
+import { IOAuthTokenRefreshRequest, IOAuthTokenResponse, isOAuthTokenResponse } from '../Model/AuthenticationModel';
 import axios from 'axios';
 import appEvent from '../Events';
 import { IProfile } from '../Model/ProfileModel';
 
 import queryString = require('query-string');
 
-const authEndpoint = 'https://auth.api.sonyentertainmentnetwork.com/2.0/oauth/token';
-
-const clientAuthorization = 'YmE0OTVhMjQtODE4Yy00NzJiLWIxMmQtZmYyMzFjMWI1NzQ1Om12YWlaa1JzQXNJMUlCa1k=';
+const clientAuthorization = 'YWM4ZDE2MWEtZDk2Ni00NzI4LWIwZWEtZmZlYzIyZjY5ZWRjOkRFaXhFcVhYQ2RYZHdqMHY=';
 
 export default class PlayStationAccount
 {
 	private _accountData : IOAuthTokenResponse;
 
-	private static refreshTokenFormData(tokenData: IOAuthTokenResponse) : object
+	private static refreshTokenFormData(tokenData: IOAuthTokenResponse) : IOAuthTokenRefreshRequest
 	{
 		return {
 			grant_type: 'refresh_token',
+			token_format: 'jtw',
 			refresh_token: tokenData.refresh_token,
-			redirect_uri: 'https://remoteplay.dl.playstation.net/remoteplay/redirect',
 			scope: tokenData.scope
-		};
+		} as IOAuthTokenRefreshRequest;
 	}
 
 	private constructor(accountData: IOAuthTokenResponse)
@@ -33,29 +31,27 @@ export default class PlayStationAccount
 		return this._accountData;
 	}
 
-	public static login(info: string | IOAuthTokenResponse) : Promise<PlayStationAccount>
+	public static login(info: string) : Promise<PlayStationAccount>
 	{
 		return new Promise<PlayStationAccount>((resolve, reject) => {
-			let formData = {};
-
-			if (typeof info === 'string')
-			{
-				formData = {
-					grant_type: 'authorization_code',
+			const formData = queryString.stringify({
+					smcid: 'psapp%3Asettings-entrance',
+					access_type: 'offline',
 					code: info as string,
-					redirect_uri: 'https://remoteplay.dl.playstation.net/remoteplay/redirect',
-				};
-			}
-			else if (isOAuthTokenResponse(info))
-			{
-				formData = PlayStationAccount.refreshTokenFormData(info);
-			}
-			else
-			{
-				return reject(`Invalid argument type passed to login: ${typeof info}`);
-			}
+					service_logo: 'ps',
+					ui: 'pr',
+					elements_visibility: 'no_aclink',
+					redirect_uri: 'com.playstation.PlayStationApp://redirect',
+					support_scheme: 'sneiprls',
+					grant_type: 'authorization_code',
+					darkmode: 'true',
+					token_format: 'jwt',
+					device_profile: 'mobile',
+					app_context: 'inapp_ios',
+					extraQueryParams: '{ PlatformPrivacyWs1 = minimal; }',
+				});
 
-			axios.post<IOAuthTokenResponse>('https://auth.api.sonyentertainmentnetwork.com/2.0/oauth/token', queryString.stringify(formData), {
+			axios.post('https://ca.account.sony.com/api/authz/v3/oauth/token', formData, {
 				headers: {
 					'Authorization': `Basic ${clientAuthorization}`,
 					'Content-Type': 'application/x-www-form-urlencoded'
@@ -81,6 +77,40 @@ export default class PlayStationAccount
 		});
 	}
 
+	public static loginWithRefresh(info: IOAuthTokenResponse) : Promise<PlayStationAccount>
+	{
+		return new Promise<PlayStationAccount>((resolve, reject) => {
+			// This is here because of some weird problem with queryString.stringify
+			// - Tustin 5/30/2019
+			let formData = {};
+			formData = PlayStationAccount.refreshTokenFormData(info);
+
+			axios.post<IOAuthTokenResponse>('https://ca.account.sony.com/api/authz/v3/oauth/token', queryString.stringify(formData), {
+				headers: {
+					'Authorization': `Basic ${clientAuthorization}`,
+					'Content-Type': 'application/x-www-form-urlencoded'
+				}
+			})
+			.then((response) => {
+				const accountData = response.data;
+
+				appEvent.emit('logged-in', accountData);
+
+				return resolve(new this(accountData));
+			})
+			.catch((err) => {
+				appEvent.emit('tokens-refresh-failed', err);
+
+				if (err.response)
+				{
+					return reject(err.response.data);
+				}
+
+				return reject(err);
+			});
+		});
+	}
+
 	public refresh() : Promise<IOAuthTokenResponse>
 	{
 		return new Promise<IOAuthTokenResponse>((resolve, reject) => {
@@ -89,7 +119,7 @@ export default class PlayStationAccount
 			let formData = {};
 			formData = PlayStationAccount.refreshTokenFormData(this.data);
 
-			axios.post<IOAuthTokenResponse>('https://auth.api.sonyentertainmentnetwork.com/2.0/oauth/token', queryString.stringify(formData), {
+			axios.post<IOAuthTokenResponse>('https://ca.account.sony.com/api/authz/v3/oauth/token', queryString.stringify(formData), {
 				headers: {
 					'Authorization': `Basic ${clientAuthorization}`,
 					'Content-Type': 'application/x-www-form-urlencoded'
