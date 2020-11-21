@@ -1,7 +1,8 @@
 import _store = require('electron-store');
 import log = require('electron-log');
 import axios from 'axios';
-import { IPresence } from './Model/ProfileModel';
+import { IBasicPresence } from './Model/PresenceModel';
+const unorm = require('unorm');
 
 interface IGame
 {
@@ -11,6 +12,7 @@ interface IGame
 
 interface ISupportedGames
 {
+	ps5 : IGame[];
 	ps4 : IGame[];
 	ps3 : IGame[];
 	vita : IGame[];
@@ -66,10 +68,24 @@ class SupportedGames
 		});
 	}
 
-	public get(presence: IPresence) : IGame
+	public get(presence: IBasicPresence) : IGame
 	{
-		return this.store.get('consoles.ps4').find((game: IGame) => {
-			return (game.titleId.toLowerCase() === presence.npTitleId.toLowerCase()) || (game.name.toLowerCase() === presence.titleName.toLowerCase());
+		const console = presence.primaryPlatformInfo.platform.toLowerCase();
+		const consoleStore = `consoles.${console}`;
+		if (!this.store.has(consoleStore))
+		{
+			log.debug('no console found in supported games list.');
+
+			return undefined;
+		}
+
+		return this.store.get(consoleStore).find((game: IGame) => {
+			const titleInfo = presence.gameTitleInfoList[0];
+			if (game.titleId.toLowerCase() === titleInfo.npTitleId.toLowerCase()) {
+				return true;
+			}
+
+			return unorm.nfc(game.name.toLowerCase()).indexOf(unorm.nfc(titleInfo.titleName.toLowerCase())) !== -1;
 		});
 	}
 }

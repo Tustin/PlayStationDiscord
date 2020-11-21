@@ -1,24 +1,20 @@
-interface IAvatarUrl
-{
+export interface IPersonalDetail {
+	firstName : string;
+	lastName : string;
+}
+
+export interface IAvatar {
 	size : string;
-	avatarUrl : string;
+	url : string;
 }
 
-export interface IPresence
-{
-	onlineStatus : string;
-	platform : string;
-	npTitleId : string;
-	titleName : string;
-	npTitleIconUrl : string;
-	gameStatus : string;
-}
-
-export interface IProfile
-{
+export interface IProfileModel {
 	onlineId : string;
-	avatarUrls : IAvatarUrl[];
-	plus : boolean;
-	primaryOnlineStatus : string;
-	presences : IPresence[];
+	personalDetail : IPersonalDetail;
+	aboutMe : string;
+	avatars : IAvatar[];
+	languages : string[];
+	isPlus : boolean;
+	isOfficiallyVerified : boolean;
+	isMe : boolean;
 }

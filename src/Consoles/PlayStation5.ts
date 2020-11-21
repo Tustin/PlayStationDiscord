@@ -1,19 +1,19 @@
 import { PlayStationConsoleType, PlayStationConsole } from './PlayStationConsole';
 
-export default class PlayStation3 extends PlayStationConsole
+export default class PlayStation5 extends PlayStationConsole
 {
 	public constructor()
 	{
-		super(PlayStationConsoleType.PS3, '772576154267549717');
+		super(PlayStationConsoleType.PS5, '772482010878312458');
 	}
 
 	public get assetName() : string
 	{
-		return 'ps3_main';
+		return 'ps5_main';
 	}
 
 	public get consoleName() : string
 	{
-		return 'PlayStation 3';
+		return 'PlayStation 5';
 	}
 }

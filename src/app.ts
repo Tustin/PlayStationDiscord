@@ -1,11 +1,11 @@
-import { app, BrowserWindow, dialog, ipcMain, nativeImage, shell, Tray, Menu, Notification, MenuItemConstructorOptions, MenuItem } from 'electron';
-import { IPresence } from './Model/ProfileModel';
+import { app, BrowserWindow, dialog, ipcMain, nativeImage, shell, Tray, Menu, Notification, MenuItemConstructorOptions, MenuItem, session } from 'electron';
 import { IOAuthTokenResponse, } from './Model/AuthenticationModel';
 import { DiscordController } from './DiscordController';
 import {PlayStationConsole, PlayStationConsoleType } from './Consoles/PlayStationConsole';
 import { IDiscordPresenceModel, IDiscordPresenceUpdateOptions } from './Model/DiscordPresenceModel';
 import { autoUpdater } from 'electron-updater';
 import axios from 'axios';
+import PlayStation5 from './Consoles/PlayStation5';
 import PlayStation4 from './Consoles/PlayStation4';
 import PlayStation3 from './Consoles/PlayStation3';
 import PlayStationVita from './Consoles/PlayStationVita';
@@ -17,6 +17,8 @@ import queryString = require('query-string');
 import log = require('electron-log');
 import url = require('url');
 import path = require('path');
+import { IBasicPresence } from './Model/PresenceModel';
+import * as _ from 'lodash';
 
 const isDev = process.env.NODE_ENV === 'dev';
 
@@ -24,7 +26,7 @@ const supportedGames = require('./SupportedGames');
 
 const store = new _store();
 
-const sonyLoginUrl : string = 'https://id.sonyentertainmentnetwork.com/signin/?service_entity=urn:service-entity:psn&response_type=code&client_id=ba495a24-818c-472b-b12d-ff231c1b5745&redirect_uri=https://remoteplay.dl.playstation.net/remoteplay/redirect&scope=psn:clientapp&request_locale=en_US&ui=pr&service_logo=ps&layout_type=popup&smcid=remoteplay&PlatformPrivacyWs1=exempt&error=login_required&error_code=4165&error_description=User+is+not+authenticated&no_captcha=false';
+const sonyLoginUrl : string = 'https://ca.account.sony.com/api/authz/v3/oauth/authorize?response_type=code&app_context=inapp_ios&device_profile=mobile&extraQueryParams=%7B%0A%20%20%20%20PlatformPrivacyWs1%20%3D%20minimal%3B%0A%7D&token_format=jwt&access_type=offline&scope=psn%3Amobile.v1%20psn%3Aclientapp&service_entity=urn%3Aservice-entity%3Apsn&ui=pr&smcid=psapp%253Asettings-entrance&darkmode=true&redirect_uri=com.playstation.PlayStationApp%3A%2F%2Fredirect&support_scheme=sneiprls&client_id=ac8d161a-d966-4728-b0ea-ffec22f69edc&duid=0000000d0004008088347AA0C79542D3B656EBB51CE3EBE1&device_base_font_size=10&elements_visibility=no_aclink&service_logo=ps';
 
 const logoIcon = nativeImage.createFromPath(path.join(__dirname, '../assets/images/logo.png'));
 
@@ -40,7 +42,7 @@ let playstationAccount : PlayStationAccount;
 
 // Discord stuff
 let discordController : DiscordController;
-let previousPresence : IPresence;
+let previousPresence : IBasicPresence;
 
 // Loop Ids
 let updateRichPresenceLoop : NodeJS.Timeout;
@@ -65,11 +67,11 @@ if (!instanceLock)
 	app.quit();
 }
 
-axios.interceptors.request.use((request) => {
-	log.debug('Firing axios request:', request);
+// axios.interceptors.request.use((request) => {
+// 	log.debug('Firing axios request:', request);
 
-	return request;
-});
+// 	return request;
+// });
 
 app.setAppUserModelId('com.tustin.playstationdiscord');
 
@@ -112,12 +114,10 @@ function spawnLoginWindow() : void
 		userAgent: 'Mozilla/5.0'
 	});
 
-	loginWindow.webContents.on('did-finish-load', () => {
-		const browserUrl : string = loginWindow.webContents.getURL();
-
-		if (browserUrl.startsWith('https://remoteplay.dl.playstation.net/remoteplay/redirect'))
+	loginWindow.webContents.on('will-redirect', (event, url) => {
+		if (url.startsWith('com.playstation.playstationapp://redirect/'))
 		{
-			const query : string = queryString.extract(browserUrl);
+			const query : string = queryString.extract(url);
 			const items : any = queryString.parse(query);
 
 			if (!items.code)
@@ -164,6 +164,10 @@ function spawnMainWindow() : void
 			click:  () => mainWindow.show()
 		},
 		{
+			label: 'Toggle Presence',
+			click:  () => ipcMain.emit('toggle-presence')
+		},
+		{
 			label: 'Quit',
 			click:  () => {
 				mainWindow.destroy();
@@ -186,7 +190,8 @@ function spawnMainWindow() : void
 		icon: logoIcon,
 		backgroundColor: '#23272a',
 		webPreferences: {
-			nodeIntegration: true
+			nodeIntegration: true,
+			enableRemoteModule: true
 		},
 		frame: false,
 		title: 'PlayStationDiscord'
@@ -209,6 +214,14 @@ function spawnMainWindow() : void
 		{
 			log.debug('Skipping update check because app is running in dev mode');
 		}
+
+		playstationAccount.profile()
+		.then((profile) => {
+			log.debug('Got PSN profile info', profile);
+			mainWindow.webContents.send('profile-data', profile);
+		}).catch((err) => {
+			log.error('Failed fetching PSN profile', err);
+		});
 
 		appEvent.emit('start-rich-presence');
 	});
@@ -274,9 +287,9 @@ let supportedTitleId : string;
 
 function updateRichPresence() : void
 {
-	playstationAccount.profile()
-	.then((profile) => {
-		if (profile.primaryOnlineStatus !== 'online')
+	playstationAccount.presences()
+	.then((presence) => {
+		if (presence.primaryPlatformInfo.onlineStatus !== 'online')
 		{
 			if (discordController && discordController.running())
 			{
@@ -291,16 +304,16 @@ function updateRichPresence() : void
 				details: 'Offline'
 			});
 		}
-		else if (profile.primaryOnlineStatus === 'online')
+		else if (presence.primaryPlatformInfo.onlineStatus === 'online')
 		{
 			let discordRichPresenceData : IDiscordPresenceModel;
 			let discordRichPresenceOptionsData : IDiscordPresenceUpdateOptions;
 
-			// We really should start handling multiple presences properly at this point...
-			const presence = profile.presences[0];
-			const platform = presence.platform;
+			const platform = presence.primaryPlatformInfo.platform;
+			const titleInfo = _.get(presence, ['gameTitleInfoList', 0]);
+			const previousPresenceTitleInfo = _.get(previousPresence, ['gameTitleInfoList', 0]);
 
-			if (previousPresence === undefined || platform !== previousPresence.platform)
+			if (previousPresence === undefined || platform !== previousPresence.primaryPlatformInfo.platform)
 			{
 				log.info('Switching console to ', platform);
 
@@ -313,6 +326,7 @@ function updateRichPresence() : void
 					discordController = undefined;
 				}
 
+				// @TODO: Check this to make sure platform case matches the consoletype keys.
 				const platformType = PlayStationConsoleType[platform as (keyof typeof PlayStationConsoleType)];
 
 				if (platformType === undefined)
@@ -338,10 +352,10 @@ function updateRichPresence() : void
 
 			// Setup previous presence with the current presence if it's empty.
 			// Update status if the titleId has changed.
-			if (previousPresence === undefined || previousPresence.npTitleId !== presence.npTitleId)
+			if (previousPresence === undefined || _.get(previousPresenceTitleInfo, ['npTitleId']) !== _.get(titleInfo, ['npTitleId']))
 			{
 				// See if we're actually playing a title.
-				if (presence.npTitleId === undefined)
+				if (!_.get(titleInfo, ['npTitleId']))
 				{
 					discordRichPresenceData = {
 						details: 'Online',
@@ -356,13 +370,13 @@ function updateRichPresence() : void
 				else
 				{
 					discordRichPresenceData = {
-						details: presence.titleName,
-						state: presence.gameStatus,
+						details: titleInfo.titleName,
+						state: titleInfo.gameStatus,
 						startTimestamp: Date.now(),
-						largeImageText: presence.titleName
+						largeImageText: titleInfo.titleName
 					};
 
-					log.info('Game has switched', presence.titleName);
+					log.info('Game has switched', titleInfo.titleName);
 
 					const discordFriendly = supportedGames.get(presence);
 
@@ -375,18 +389,18 @@ function updateRichPresence() : void
 					}
 					else
 					{
-						log.warn('Game icon not found in supported games store', presence.titleName, presence.npTitleId);
+						log.warn('Game icon not found in supported games store', titleInfo.titleName, titleInfo.npTitleId);
 						supportedTitleId = undefined;
 					}
 				}
 			}
 			// Update if game status has changed.
-			else if (previousPresence === undefined || previousPresence.gameStatus !== presence.gameStatus)
+			else if (previousPresence === undefined || _.get(previousPresenceTitleInfo, ['gameStatus']) !== _.get(titleInfo, ['gameStatus']))
 			{
 				discordRichPresenceData = {
-					details: presence.titleName,
-					state: presence.gameStatus,
-					largeImageText: presence.titleName
+					details: titleInfo.titleName,
+					state: titleInfo.gameStatus,
+					largeImageText: titleInfo.titleName
 				};
 
 				if (supportedTitleId !== undefined)
@@ -394,7 +408,7 @@ function updateRichPresence() : void
 					discordRichPresenceData.largeImageKey = supportedTitleId;
 				}
 
-				log.info('Game status has changed', presence.gameStatus);
+				log.info('Game status has changed', titleInfo.gameStatus);
 			}
 
 			// Only send a rich presence update if we have something new and it's enabled.
@@ -412,11 +426,10 @@ function updateRichPresence() : void
 			}
 		}
 
-		mainWindow.webContents.send('profile-data', profile);
 		richPresenceRetries = 0;
 	})
 	.catch((err) => {
-		log.error('Failed fetching PSN profile', err);
+		log.error('Failed fetching PSN presence', err);
 
 		if (++richPresenceRetries === 5)
 		{
@@ -429,22 +442,19 @@ function updateRichPresence() : void
 
 function getConsoleFromType(type: PlayStationConsoleType) : PlayStationConsole
 {
-	if (type === PlayStationConsoleType.PS4)
+	switch (type)
 	{
-		return new PlayStation4();
+		case PlayStationConsoleType.PS5:
+			return new PlayStation5();
+		case PlayStationConsoleType.ps4:
+			return new PlayStation4();
+		case PlayStationConsoleType.PS3:
+			return new PlayStation3();
+		case PlayStationConsoleType.PSVITA:
+			return new PlayStationVita();
+		default:
+			return undefined;
 	}
-
-	if (type === PlayStationConsoleType.PS3)
-	{
-		return new PlayStation3();
-	}
-
-	if (type === PlayStationConsoleType.PSVITA)
-	{
-		return new PlayStationVita();
-	}
-
-	return undefined;
 }
 
 // For some reason, despite Timeout being a reference, it doesn't seem like you can undefine it by reference.
@@ -564,7 +574,7 @@ ipcMain.on('signout', async () => {
 		icon: logoIcon
 	});
 
-	if (response === 0)
+	if (!response)
 	{
 		signoutCleanup();
 	}
@@ -699,7 +709,7 @@ app.on('ready', () => {
 
 	if (store.has('tokens'))
 	{
-		PlayStationAccount.login(store.get('tokens') as IOAuthTokenResponse)
+		PlayStationAccount.loginWithRefresh(store.get('tokens') as IOAuthTokenResponse)
 		.then((account) => {
 			playstationAccount = account;
 
