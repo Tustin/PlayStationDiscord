@@ -77,12 +77,14 @@
   },
   "homepage": "https://tusticles.com/PlayStationDiscord/",
   "dependencies": {
+    "@types/lodash": "^4.14.165",
     "axios": "^0.21.0",
     "compare-versions": "^3.4.0",
     "discord-rich-presence": "0.0.8",
     "electron-log": "^4.3.0",
     "electron-store": "^2.0.0",
     "electron-updater": "^4.0.6",
+    "lodash": "^4.17.20",
     "normalize.css": "^8.0.1",
     "progress-stream": "^2.0.0",
     "query-string": "^6.13.7"
