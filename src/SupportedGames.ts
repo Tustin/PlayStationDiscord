@@ -2,6 +2,7 @@ import _store = require('electron-store');
 import log = require('electron-log');
 import axios from 'axios';
 import { IBasicPresence } from './Model/PresenceModel';
+const unorm = require('unorm');
 
 interface IGame
 {
@@ -69,10 +70,22 @@ class SupportedGames
 
 	public get(presence: IBasicPresence) : IGame
 	{
-		return this.store.get('consoles.ps4').find((game: IGame) => {
-			const titleInfo = presence.gameTitleInfoList[0];
+		const console = presence.primaryPlatformInfo.platform.toLowerCase();
+		const consoleStore = `consoles.${console}`;
+		if (!this.store.has(consoleStore))
+		{
+			log.debug('no console found in supported games list.');
 
-			return (game.titleId.toLowerCase() === titleInfo.npTitleId.toLowerCase()) || (game.name.toLowerCase() === titleInfo.titleName.toLowerCase());
+			return undefined;
+		}
+
+		return this.store.get(consoleStore).find((game: IGame) => {
+			const titleInfo = presence.gameTitleInfoList[0];
+			if (game.titleId.toLowerCase() === titleInfo.npTitleId.toLowerCase()) {
+				return true;
+			}
+
+			return unorm.nfc(game.name.toLowerCase()).indexOf(unorm.nfc(titleInfo.titleName.toLowerCase())) !== -1;
 		});
 	}
 }

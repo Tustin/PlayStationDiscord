@@ -66,8 +66,6 @@ ipcRenderer.on('presence-data', (event: any, data: any) => {
 	const details = document.getElementById('details');
 	const state = document.getElementById('state');
 
-	console.log(data);
-
 	state.innerHTML = '';
 	details.innerHTML = data.details;
 

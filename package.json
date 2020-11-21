@@ -46,7 +46,7 @@
     "lint": "tslint --project .",
     "compile": "npm run lint && tsc && sass ./assets/app.scss ./dist/app.css --style=compressed --no-source-map",
     "watch": "tsc -w",
-    "start": "npm run compile && cross-env NODE_ENV=prod electron .",
+    "start": "npm run compile && cross-env NODE_ENV=dev electron .",
     "build:icons": "electron-icon-maker -i ./assets/images/logo.png -o ./build/",
     "build:win": "npm run compile && npm run build:icons && electron-builder build --windows",
     "build:mac": "npm run compile && npm run build:icons && electron-builder build --mac",
@@ -87,7 +87,8 @@
     "lodash": "^4.17.20",
     "normalize.css": "^8.0.1",
     "progress-stream": "^2.0.0",
-    "query-string": "^6.13.7"
+    "query-string": "^6.13.7",
+    "unorm": "^1.6.0"
   },
   "devDependencies": {
     "@types/electron-store": "^1.3.0",

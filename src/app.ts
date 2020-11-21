@@ -217,13 +217,11 @@ function spawnMainWindow() : void
 
 		playstationAccount.profile()
 		.then((profile) => {
-			log.info('Got PSN profile info', profile);
+			log.debug('Got PSN profile info', profile);
 			mainWindow.webContents.send('profile-data', profile);
 		}).catch((err) => {
 			log.error('Failed fetching PSN profile', err);
 		});
-
-		mainWindow.webContents.openDevTools();
 
 		appEvent.emit('start-rich-presence');
 	});
@@ -291,7 +289,6 @@ function updateRichPresence() : void
 {
 	playstationAccount.presences()
 	.then((presence) => {
-		console.log(presence);
 		if (presence.primaryPlatformInfo.onlineStatus !== 'online')
 		{
 			if (discordController && discordController.running())
@@ -358,7 +355,7 @@ function updateRichPresence() : void
 			if (previousPresence === undefined || _.get(previousPresenceTitleInfo, ['npTitleId']) !== _.get(titleInfo, ['npTitleId']))
 			{
 				// See if we're actually playing a title.
-				if (titleInfo.npTitleId === undefined)
+				if (!_.get(titleInfo, ['npTitleId']))
 				{
 					discordRichPresenceData = {
 						details: 'Online',
