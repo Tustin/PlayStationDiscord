@@ -189,7 +189,8 @@ function spawnMainWindow() : void
 		icon: logoIcon,
 		backgroundColor: '#23272a',
 		webPreferences: {
-			nodeIntegration: true
+			nodeIntegration: true,
+			enableRemoteModule: true
 		},
 		frame: false,
 		title: 'PlayStationDiscord'
@@ -215,11 +216,13 @@ function spawnMainWindow() : void
 
 		playstationAccount.profile()
 		.then((profile) => {
-			log.debug('Got PSN profile info', profile);
+			log.info('Got PSN profile info', profile);
 			mainWindow.webContents.send('profile-data', profile);
-		}).then((err) => {
+		}).catch((err) => {
 			log.error('Failed fetching PSN profile', err);
 		});
+
+		mainWindow.webContents.openDevTools();
 
 		appEvent.emit('start-rich-presence');
 	});

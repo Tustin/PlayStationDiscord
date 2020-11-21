@@ -3,6 +3,8 @@ import axios from 'axios';
 import appEvent from '../Events';
 import { IProfileModel } from '../Model/ProfileModel';
 import { IBasicPresence, IPresenceModel } from '../Model/PresenceModel';
+import _store = require('electron-store');
+const store = new _store();
 
 import queryString = require('query-string');
 
@@ -174,22 +176,67 @@ export default class PlayStationAccount
 		});
 	}
 
-	public profile() : Promise<IProfileModel>
+	private accountId() : Promise<string>
 	{
-		return new Promise<IProfileModel>((resolve, reject) => {
-			const accessToken = this.data.access_token;
+		return new Promise<string>((resolve, reject) => {
+			if (store.has('accountId'))
+			{
+				return resolve(store.get('accountId'));
+			}
 
-			axios.get<IProfileModel>('https://m.np.playstation.net/api/userProfile/v1/internal/users/me/profiles', {
+			const accessToken = this.data.access_token;
+			axios.get('https://dms.api.playstation.com/api/v1/devices/accounts/me', {
 				headers: {
 					Authorization: `Bearer ${accessToken}`
 				}
 			})
 			.then((response) => {
-				const responseBody = response.data;
+				const accountId = response.data.accountId;
 
-				appEvent.emit('profile-data', responseBody);
+				store.set('accountId', accountId);
 
-				return resolve(responseBody);
+				return resolve(accountId);
+			})
+			.catch((err) => {
+				if (err.response)
+				{
+					return reject(err.response.error);
+				}
+
+				return reject(err);
+			});
+		});
+	}
+
+	public profile() : Promise<IProfileModel>
+	{
+		return new Promise<IProfileModel>((resolve, reject) => {
+			const accessToken = this.data.access_token;
+
+			this.accountId()
+			.then((accountId) => {
+				axios.get<IProfileModel>(`https://m.np.playstation.net/api/userProfile/v1/internal/users/${accountId}/profiles`, {
+					headers: {
+						Authorization: `Bearer ${accessToken}`
+					}
+				})
+				.then((response) => {
+					const responseBody = response.data;
+
+					appEvent.emit('profile-data', responseBody);
+
+					return resolve(responseBody);
+				})
+				.catch((err) => {
+					appEvent.emit('profile-data-failed', err);
+
+					if (err.response)
+					{
+						return reject(err.response.error);
+					}
+
+					return reject(err);
+				});
 			})
 			.catch((err) => {
 				appEvent.emit('profile-data-failed', err);
