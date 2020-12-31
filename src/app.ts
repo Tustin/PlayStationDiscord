@@ -252,20 +252,24 @@ function spawnMainWindow() : void
 
 		if (Notification.isSupported())
 		{
-			let bodyText : string;
+			if (store.get('trayNotificationSeen') === undefined)
+			{
+				let bodyText : string;
 
-			if (process.platform === 'darwin') {
-				bodyText = 'PlayStationDiscord is still running. You can restore it by clicking the icon in the menubar.';
-			} else {
-				bodyText = 'PlayStationDiscord is still running in the tray. You can restore it by double clicking the icon in the tray.';
+				if (process.platform === 'darwin') {
+					bodyText = 'PlayStationDiscord is still running. You can restore it by clicking the icon in the menubar.';
+				} else {
+					bodyText = 'PlayStationDiscord is still running in the tray. You can restore it by double clicking the icon in the tray.';
+				}
+				const notification = new Notification({
+					title: 'Still Here!',
+					body: bodyText,
+					icon: logoIcon
+				});
+
+				notification.show();
+				store.set('trayNotificationSeen', true);
 			}
-			const notification = new Notification({
-				title: 'Still Here!',
-				body: bodyText,
-				icon: logoIcon
-			});
-
-			notification.show();
 		}
 		else
 		{
