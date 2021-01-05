@@ -78,7 +78,7 @@
   "homepage": "https://tusticles.com/PlayStationDiscord/",
   "dependencies": {
     "@types/lodash": "^4.14.165",
-    "axios": "^0.21.0",
+    "axios": "^0.21.1",
     "compare-versions": "^3.4.0",
     "discord-rich-presence": "0.0.8",
     "electron-log": "^4.3.0",
