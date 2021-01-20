@@ -3,11 +3,11 @@
 [![Actions Status](https://github.com/Tustin/PlayStationDiscord/workflows/PlayStationDiscord%20Deploy/badge.svg)](https://github.com/Tustin/PlayStationDiscord/actions)
 ![License](https://img.shields.io/github/license/Tustin/PlayStationDiscord.svg?style=flat)
 
-Discord Rich Presence for PlayStation 4, PlayStation 3, and PlayStation Vita games.
+Discord Rich Presence for PlayStation 5, PlayStation 4, PlayStation 3, and PlayStation Vita games.
 
-| PlayStation 4                                                                                     | PlayStation 3                                                                                     | PlayStation Vita                                                                                    |
-| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| ![rich presence ps4 img](https://tusticles.com/PlayStationDiscord/assets/images/previews/ps4.png) | ![rich presence ps3 img](https://tusticles.com/PlayStationDiscord/assets/images/previews/ps3.png) | ![rich presence vita img](https://tusticles.com/PlayStationDiscord/assets/images/previews/vita.png) |
+|PlayStation 5 | PlayStation 4                                                                                     | PlayStation 3                                                                                     | PlayStation Vita                                                                                    |
+| ---- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| ![rich presence ps5 img](https://i.imgur.com/JFWj0LQ.png) | ![rich presence ps4 img](https://tusticles.com/PlayStationDiscord/assets/images/previews/ps4.png) | ![rich presence ps3 img](https://tusticles.com/PlayStationDiscord/assets/images/previews/ps3.png) | ![rich presence vita img](https://tusticles.com/PlayStationDiscord/assets/images/previews/vita.png) |
 
 ## Download
 
