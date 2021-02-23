@@ -96,7 +96,7 @@
     "@types/query-string": "^6.2.0",
     "@types/semver": "^5.5.0",
     "cross-env": "^6.0.3",
-    "electron": "^10.1.6",
+    "electron": "^10.2.0",
     "electron-builder": "^22.9.1",
     "electron-icon-maker": "^0.0.4",
     "electron-packager": "^13.0.1",
