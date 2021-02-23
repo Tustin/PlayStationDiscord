@@ -11,7 +11,7 @@
 		"one-line": false,
 		"no-bitwise": false,
     	"comment-format": [true, "check-space"],
-    	"indent": [true, "tabs", 4],
+    	"indent": [true, 4],
     	"prefer-const": true,
     	"arrow-return-shorthand": true,
     	"class-name": true,
