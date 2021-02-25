@@ -17,6 +17,7 @@
     	"class-name": true,
     	"import-spacing": true,
 		"max-line-length": false,
+        "member-access": false,
 		"member-ordering": false,
     	"newline-before-return": true,
     	"new-parens": true,

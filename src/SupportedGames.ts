@@ -1,7 +1,7 @@
 import _store = require('electron-store');
 import log = require('electron-log');
 import axios from 'axios';
-import { IBasicPresence } from './Model/PresenceModel';
+import AbstractPresence from './PlayStation/AbstractPresence';
 const unorm = require('unorm');
 
 interface IGame
@@ -68,9 +68,9 @@ class SupportedGames
 		});
 	}
 
-	public get(presence: IBasicPresence) : IGame
+	public get(presence: AbstractPresence) : IGame
 	{
-		const console = presence.primaryPlatformInfo.platform.toLowerCase();
+		const console = presence.platform().toLowerCase();
 		const consoleStore = `consoles.${console}`;
 		if (!this.store.has(consoleStore))
 		{
@@ -80,12 +80,11 @@ class SupportedGames
 		}
 
 		return this.store.get(consoleStore).find((game: IGame) => {
-			const titleInfo = presence.gameTitleInfoList[0];
-			if (game.titleId.toLowerCase() === titleInfo.npTitleId.toLowerCase()) {
+			if (game.titleId.toLowerCase() === presence.titleId().toLowerCase()) {
 				return true;
 			}
 
-			return unorm.nfc(game.name.toLowerCase()).indexOf(unorm.nfc(titleInfo.titleName.toLowerCase())) !== -1;
+			return unorm.nfc(game.name.toLowerCase()).indexOf(unorm.nfc(presence.titleName().toLowerCase())) !== -1;
 		});
 	}
 }
