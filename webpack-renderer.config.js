@@ -84,6 +84,9 @@ module.exports = {
 						// 2 => postcss-loader, sass-loader
 					}
 				},
+                {
+                    loader: "resolve-url-loader"
+                },
 				"postcss-loader",
 				{
 					loader: "sass-loader",
@@ -142,7 +145,7 @@ module.exports = {
 			}]
 		}, {
 			test: /\.(png|jpe?g|webp|gif|ico)(\?.*)?$/i,
-			loader: "file-loader",
+			loader: "url-loader",
 			options: {
 				name: "images/[name].[hash:8].[ext]",
 				esModule: false

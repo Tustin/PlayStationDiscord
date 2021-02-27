@@ -11,43 +11,55 @@
             </div>
             <div id="title">PlayStationDiscord</div>
             <div id="controls">
-                <i id="minimize">
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                    >
+                <i id="minimize" @click="minimize">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
                         <path d="M6 19h12v2H6z" />
                         <path fill="none" d="M0 0h24v24H0V0z" />
                     </svg>
                 </i>
-                <i id="maximize">
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                    >
-                        <path d="M0 0h24v24H0z" fill="none" />
-                        <path
-                            d="M18 4H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H6V6h12v12z"
-                        />
+                <i id="maximize" @change="maximize">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+                    <path d="M0 0h24v24H0z" fill="none" />
+                        <path d="M18 4H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H6V6h12v12z"/>
                     </svg>
                 </i>
-                <i id="close">
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
-                        />
+                <i id="close" @click="close">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
                         <path d="M0 0h24v24H0z" fill="none" />
                     </svg>
                 </i>
             </div>
         </header>
 </template>
+
+<script>
+import { remote } from 'electron';
+export default {
+    name: 'TitleBar',
+    methods: {
+        minimize() {
+            const currentWindow = remote.BrowserWindow.getAllWindows()[0];
+            console.log(currentWindow);
+            currentWindow.minimize();
+        },
+        maximize() {
+            const currentWindow = remote.BrowserWindow.getAllWindows()[0];
+
+            if (currentWindow.isMaximized())
+            {
+                currentWindow.unmaximize();
+            }
+            else
+            {
+                currentWindow.maximize();
+            }
+        },
+        close() {
+            const currentWindow = remote.BrowserWindow.getAllWindows()[0];
+                
+            currentWindow.close();
+        }
+    }
+};
+</script>

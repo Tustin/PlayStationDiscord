@@ -1,18 +1,9 @@
-"use strict";
-
-import { createApp } from 'vue';
-
-// @ts-ignore
-import App from '@/App.vue'
-
-import "@/styles/app.scss";
-
 import { RouteRecordRaw, createRouter, createWebHashHistory } from 'vue-router'
 
 // @ts-ignore
-import LandingComponent from '@/pages/Landing.vue'; 
+import LandingComponent from '@/components/Landing.vue'; 
 // @ts-ignore
-import DashboardComponent from '@/pages/Dashboard.vue';
+import DashboardComponent from '@/components/Dashboard.vue';
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -32,6 +23,4 @@ const router = createRouter({
   routes,
 })
 
-
-createApp(App).use(router).mount("#app");
-
+export default router

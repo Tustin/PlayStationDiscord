@@ -17,17 +17,13 @@ module.exports = {
 		"no-debugger": process.env.NODE_ENV === "production" ? "error" : "off",
 		"indent": [
 			"error",
-			"tab"
-		],
-		"linebreak-style": [
-			"error",
-			"unix"
+			4
 		],
 		"quotes": [
 			"error",
-			"double"
+			"single"
 		],
-		"semi": [
+        "semi": [
 			"error",
 			"always"
 		]

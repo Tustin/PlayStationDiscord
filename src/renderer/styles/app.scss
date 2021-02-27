@@ -1,0 +1,219 @@
+// @import "@/node_modules/normalize.css/normalize.css";
+@import "_theme";
+@import "_button";
+@import "_checkmark";
+
+body {
+  font-family: $font-stack;
+  overflow: hidden;
+  background: url(../assets/images/background.png) repeat-y;
+  background-size: 100%;
+
+  header {
+    display: grid;
+    grid-template-columns: 32px auto 138px;
+    line-height: 32px;
+    background-color: $title-bar-background;
+    -webkit-app-region: drag;
+    -webkit-user-select: none;
+
+    #app-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-app-region: no-drag;
+    }
+
+    #title {
+      font-size: 12px;
+      color: #fff;
+    }
+
+    #controls {
+      display: grid;
+      z-index: 69;
+      -webkit-app-region: no-drag;
+
+      .control {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.25s cubic-bezier(0.25, 0.25, 0.315, 1.35);
+      }
+
+      #minimize,
+      #maximize,
+      #close {
+        fill: #fff;
+
+        @extend .control;
+
+        &:hover {
+          cursor: pointer;
+        }
+      }
+
+      #minimize {
+        grid-column: 1;
+
+        &:hover {
+          background-color: $title-bar-control-hover;
+        }
+
+        &:active {
+          background-color: $title-bar-control-active;
+        }
+      }
+
+      #maximize {
+        grid-column: 2;
+
+        &:hover {
+          background-color: $title-bar-control-hover;
+        }
+
+        &:active {
+          background-color: $title-bar-control-active;
+        }
+      }
+
+      #close {
+        grid-column: 3;
+
+        &:hover {
+          background-color: $title-bar-control-close;
+          box-shadow: rgba(0, 0, 0, 0.5) 0px 2px 6px 0px;
+        }
+
+        &:active {
+          background-color: $title-bar-control-close-active;
+        }
+      }
+    }
+  }
+
+  main {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin-top: -16px;
+    text-align: center;
+
+    #update-info {
+      width: 100vw;
+      height: 32px;
+      display: grid;
+      grid-template-columns: 32px auto;
+      position: fixed;
+      top: 32px;
+      z-index: 69;
+      line-height: 32px;
+      text-align: left;
+      background-color: $whitespace-primary;
+      -webkit-user-select: none;
+
+      &.fade {
+        opacity: 0;
+        transition: opacity 5s ease-in-out;
+      }
+
+      #icon {
+        display: flex;
+        width: 32px;
+        height: 32px;
+        grid-column: 1;
+        align-items: center;
+        justify-content: center;
+        -webkit-app-region: no-drag;
+      }
+
+      #text {
+        grid-column: 2;
+        font-size: 12px;
+        color: $text-primary;
+
+        #install,
+        #notes {
+          cursor: pointer;
+
+          &:hover {
+            color: #fff;
+          }
+        }
+      }
+    }
+
+    .playstation-info {
+      img#avatar {
+        width: 200px;
+        height: auto;
+        user-select: none;
+        border-radius: 3px;
+      }
+
+      .presence-details {
+        line-height: 0.5;
+
+        #onlineId {
+          font-size: 24px;
+          color: #fff;
+        }
+
+        #details,
+        #state {
+          font-size: 18px;
+        }
+
+        #details {
+          color: $text-primary;
+        }
+
+        #state {
+          color: $text-secondary;
+        }
+      }
+    }
+  }
+
+  footer {
+    #discord-reconnect {
+      width: 100vw;
+      height: 32px;
+      display: grid;
+      grid-template-columns: 32px auto;
+      position: fixed;
+      bottom: 0px;
+      background-color: $whitespace-primary;
+      -webkit-user-select: none;
+
+      &:hover {
+        cursor: pointer;
+      }
+
+      #icon {
+        display: flex;
+        grid-column: 1;
+        align-items: center;
+        justify-content: center;
+        -webkit-app-region: no-drag;
+      }
+
+      #text {
+        grid-column: 2;
+        font-size: 12px;
+        color: $text-primary;
+
+        &:hover {
+          color: #fff;
+        }
+      }
+    }
+
+    #options {
+      position: absolute;
+      top: 100%;
+      right: 0%;
+    }
+  }
+}
