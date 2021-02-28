@@ -1,6 +1,9 @@
 <template>
     <TitleBar />
-    <router-view />
+    <main>
+        <router-view />
+    </main>
+    <Footer />
 </template>
 
 <script>
@@ -9,8 +12,9 @@
 	'use strict';
 
     import TitleBar from '@/components/TitleBar';
+    import Footer from '@/components/Footer';
 
 	export default {
-        components: { TitleBar },
+        components: { TitleBar, Footer },
 	};
 </script>

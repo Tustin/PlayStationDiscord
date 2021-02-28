@@ -7,7 +7,12 @@ import App from '@/App.vue'
 
 import "@/styles/app.scss";
 
-import { RouteRecordRaw, createRouter, createWebHashHistory } from 'vue-router'
+import { RouteRecordRaw, createRouter, createWebHashHistory } from 'vue-router';
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { faPlaystation } from '@fortawesome/free-brands-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+
+library.add(faPlaystation);
 
 // @ts-ignore
 import LandingComponent from '@/pages/Landing.vue'; 
@@ -33,4 +38,4 @@ const router = createRouter({
 })
 
 
-createApp(App).use(router).mount("#app");
+createApp(App).component('font-awesome-icon', FontAwesomeIcon).use(router).mount("#app");

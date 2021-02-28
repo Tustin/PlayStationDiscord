@@ -1,7 +1,8 @@
-// @import "@/node_modules/normalize.css/normalize.css";
+@import "~normalize.css/normalize.css";
 @import "_theme";
 @import "_button";
 @import "_checkmark";
+@import "_hamburger";
 
 body {
   font-family: $font-stack;
@@ -140,6 +141,31 @@ body {
           &:hover {
             color: #fff;
           }
+        }
+      }
+    }
+
+    .landing {
+      .intro {
+        color: white;
+        :last-child {
+          margin-top: 5px;
+        }
+      }
+
+      .login-buttons {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-evenly;
+        align-items: flex-start;
+        height: 100px;
+
+        .ps5-login {
+          align-self: center;
+        }
+
+        .legacy-login {
+          align-self: center;
         }
       }
     }
