@@ -17,7 +17,7 @@
                         <path fill="none" d="M0 0h24v24H0V0z" />
                     </svg>
                 </i>
-                <i id="maximize" @change="maximize">
+                <i id="maximize" @click="maximize">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
                     <path d="M0 0h24v24H0z" fill="none" />
                         <path d="M18 4H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H6V6h12v12z"/>
@@ -35,16 +35,19 @@
 
 <script>
 import { remote } from 'electron';
+
 export default {
-    name: 'TitleBar',
-    methods: {
-        minimize() {
-            const currentWindow = remote.BrowserWindow.getAllWindows()[0];
-            console.log(currentWindow);
-            currentWindow.minimize();
-        },
-        maximize() {
-            const currentWindow = remote.BrowserWindow.getAllWindows()[0];
+    setup() {
+        function close() {
+            remote.getCurrentWindow().close();
+        }
+
+        function minimize() {
+            remote.getCurrentWindow().minimize();
+        }
+
+        function maximize() {
+            const currentWindow = remote.getCurrentWindow();
 
             if (currentWindow.isMaximized())
             {
@@ -54,12 +57,13 @@ export default {
             {
                 currentWindow.maximize();
             }
-        },
-        close() {
-            const currentWindow = remote.BrowserWindow.getAllWindows()[0];
-                
-            currentWindow.close();
         }
+
+        return {
+            close,
+            minimize,
+            maximize
+        };
     }
 };
 </script>

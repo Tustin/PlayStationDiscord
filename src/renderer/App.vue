@@ -1,16 +1,16 @@
 <template>
-    <TitleBar></TitleBar>
+    <TitleBar />
     <router-view />
 </template>
 
 <script>
-/* eslint-disable indent */
 
+/* eslint-disable indent */
 	'use strict';
 
-	import TitleBar from '@/components/TitleBar';
+    import TitleBar from '@/components/TitleBar';
 
 	export default {
-		components: { TitleBar }
+        components: { TitleBar },
 	};
 </script>
