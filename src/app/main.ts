@@ -95,7 +95,7 @@ function showMessageAndDie(message: string, detail?: string) : void
 }
 
 const createLoginWindow = (legacy: boolean) => {
-    const loginWindow = new BrowserWindow({
+    loginWindow = new BrowserWindow({
         width: 414,
         height: 743,
         minWidth: 414,
@@ -227,7 +227,7 @@ const createWindow = () => {
     tray.setContextMenu(contextMenu);
     tray.setToolTip('PlayStationDiscord');
 
-	const mainWindow = new BrowserWindow({
+	mainWindow = new BrowserWindow({
         width: 512,
         height: 512,
         minWidth: 512,
@@ -316,7 +316,7 @@ ipcMain.on('open-login-window', (event, legacy) => {
 
 
 appEvent.on('psn-logged-in', () => {
-    ipcRenderer.send('psn-logged-in');
+    mainWindow.webContents.send('psn-logged-in');
 });
 
 app.on("ready", () => createWindow());

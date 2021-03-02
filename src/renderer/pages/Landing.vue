@@ -14,7 +14,6 @@
 </template>
 
 <script>
-
 import { ipcRenderer } from 'electron';
 
 export default {
@@ -28,5 +27,4 @@ export default {
         };
     }
 };
-
 </script>

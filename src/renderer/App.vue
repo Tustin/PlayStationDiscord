@@ -4,7 +4,7 @@
         <router-view v-slot="{ Component }">
             <transition 
             enter-active-class="animate__animated animate__bounceInLeft"
-            leave-active-class="animate__animated animate__bounceOutLeft"
+            leave-active-class="animate__animated animate__bounceOutRight"
             mode="out-in">
                 <component :is="Component" />
             </transition>
@@ -15,17 +15,18 @@
 
 <script>
 import { ipcRenderer } from 'electron';
+import { useRouter } from 'vue-router';
 
 import TitleBar from '@/components/TitleBar';
 import Footer from '@/components/Footer';
 
-ipcRenderer.on('psn-logged-in', () => {
-    this.$router.push('Dashboard');
-});
-
-
 export default {
     components: { TitleBar, Footer },
+    setup() {
+        const router = useRouter();
+        ipcRenderer.on('psn-logged-in', () => {
+            router.push('Dashboard');
+        });
+    }
 };
-
 </script>
