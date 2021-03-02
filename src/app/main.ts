@@ -1,9 +1,10 @@
 "use strict";
 
-import { app, BrowserWindow, dialog, ipcMain, nativeImage, shell, Tray, Menu, Notification, MenuItemConstructorOptions, MenuItem, session } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, nativeImage, shell, Tray, Menu, Notification, MenuItemConstructorOptions, MenuItem, session, ipcRenderer } from 'electron';
 const { resolve, join } = require("path");
 const { format } = require("url");
 import _store = require('electron-store');
+import queryString = require('query-string');
 import log = require('electron-log');
 import { autoUpdater } from 'electron-updater';
 import axios from 'axios';
@@ -92,6 +93,114 @@ function showMessageAndDie(message: string, detail?: string) : void
 
     app.quit();
 }
+
+const createLoginWindow = (legacy: boolean) => {
+    const loginWindow = new BrowserWindow({
+        width: 414,
+        height: 743,
+        minWidth: 414,
+        minHeight: 763,
+        icon: logoIcon,
+        webPreferences: {
+            nodeIntegration: false,
+            enableRemoteModule: false,
+            plugins: true
+        }
+    });
+
+    loginWindow.setMenu(null);
+
+    loginWindow.loadURL(legacy ? v2.loginUrl : v3.loginUrl, {
+        userAgent: 'Mozilla/5.0'
+    });
+
+    loginWindow.webContents.on('will-redirect', (event, url) => {
+        if (store.get('legacy', false))
+        {
+            const browserUrl : string = loginWindow.webContents.getURL();
+
+            if (browserUrl.startsWith('https://remoteplay.dl.playstation.net/remoteplay/redirect'))
+            {
+                const query : string = queryString.extract(browserUrl);
+                const items : any = queryString.parse(query);
+
+                if (!items.code)
+                {
+                    log.error('Redirect URL was found but there was no code in the query string', items);
+
+                    showMessageAndDie(
+                        'An error has occurred during the PSN login process. Please try again.',
+                        'If the problem persists, please open an issue on the GitHub repo.'
+                    );
+
+                    return;
+                }
+
+                v2.login(items.code)
+                .then((account) => {
+                    playstationAccount = account as unknown as IAccount;
+
+                    store.set('tokens', account.data);
+
+                    log.info('Saved oauth tokens');
+
+                    appEvent.emit('psn-logged-in');
+
+                    loginWindow.close();
+                })
+                .catch((err) => {
+                    log.error('Unable to get PSN OAuth tokens', err);
+
+                    showMessageAndDie(
+                        'An error has occurred during the PSN login process. Please try again.',
+                        'If the problem persists, please open an issue on the GitHub repo.'
+                    );
+                });
+            }
+        }
+        else
+        {
+            if (url.startsWith('com.playstation.playstationapp://redirect/'))
+            {
+                const query : string = queryString.extract(url);
+                const items : any = queryString.parse(query);
+
+                if (!items.code)
+                {
+                    log.error('Redirect URL was found but there was no code in the query string', items);
+
+                    showMessageAndDie(
+                        'An error has occurred during the PSN login process. Please try again.',
+                        'If the problem persists, please open an issue on the GitHub repo.'
+                    );
+
+                    return;
+                }
+
+                v3.login(items.code)
+                .then((account) => {
+                    playstationAccount = account as unknown as IAccount;
+
+                    store.set('tokens', account.data);
+
+                    log.info('Saved oauth tokens');
+
+                    appEvent.emit('psn-logged-in');
+
+                    loginWindow.close();
+                })
+                .catch((err) => {
+                    log.error('Unable to get PSN OAuth tokens', err);
+
+                    showMessageAndDie(
+                        'An error has occurred during the PSN login process. Please try again.',
+                        'If the problem persists, please open an issue on the GitHub repo.'
+                    );
+                });
+            }
+        }
+    });
+};
 
 const createWindow = () => {
 
@@ -199,6 +308,16 @@ const createWindow = () => {
 		// require("vue-devtools").install(); // not supported yet
 	}
 };
+
+
+ipcMain.on('open-login-window', (event, legacy) => {
+    createLoginWindow(legacy);
+});
+
+
+appEvent.on('psn-logged-in', () => {
+    ipcRenderer.send('psn-logged-in');
+});
 
 app.on("ready", () => createWindow());
 

@@ -1,16 +1,5 @@
 <template>
     <footer>
-        <div style="display: none;" id="discord-reconnect">
-            <div id="icon" draggable="false">
-                <img
-                    src="../assets/images/reload.svg"
-                    alt="Reload"
-                    draggable="false"
-                />
-            </div>
-            <div id="text">
-                <p>Reconnect to Discord</p>
-            </div>
-        </div>
+        <router-link to="/settings"><font-awesome-icon id="settings" :icon="['fas', 'cog']" size="lg"/></router-link>
     </footer>
 </template>
