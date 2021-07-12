@@ -106,7 +106,7 @@ function spawnLoginWindow() : void
     });
 
     loginWindow.loadURL(store.get('legacy', false) ? v2.loginUrl : v3.loginUrl, {
-        userAgent: 'Mozilla/5.0'
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0'
     });
 
     loginWindow.webContents.on('will-redirect', (event, url) => {
