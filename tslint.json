@@ -31,7 +31,7 @@
     	"one-variable-per-declaration": [true, "ignore-for-loop"],
     	"object-literal-sort-keys": false,
     	"ordered-imports": false,
-    	"prefer-function-over-method": true,
+    	"prefer-function-over-method": false,
     	"prefer-while": true,
     	"return-undefined": true,
     	"variable-name": [true, "ban-keywords", "check-format", "allow-leading-underscore"],

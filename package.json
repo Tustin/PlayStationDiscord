@@ -1,6 +1,6 @@
 {
   "name": "playstationdiscord",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "description": "Discord Rich Presence for PlayStation consoles.",
   "main": "./dist/app.js",
   "build": {
