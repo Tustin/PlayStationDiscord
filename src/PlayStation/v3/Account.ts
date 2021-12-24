@@ -230,6 +230,8 @@ export class PlayStationAccount implements IAccount
                 .then((response) => {
                     const responseBody = response.data;
 
+                    console.log(responseBody);
+
                     const profile = new Profile(responseBody);
 
                     appEvent.emit('profile-data', profile);
