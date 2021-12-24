@@ -1,4 +1,6 @@
 import _ = require('lodash');
+import log = require('electron-log');
+
 import AbstractPresence from '../AbstractPresence';
 import IPresence from '../IPresence';
 import { IBasicPresence, IGameTitleInfoList } from './Model/PresenceModel';
@@ -11,7 +13,7 @@ export default class Presence extends AbstractPresence implements IPresence<IBas
     {
         super();
         this.presenceData = presenceData;
-        console.log(presenceData);
+        log.debug(presenceData);
     }
 
     public onlineStatus() : string {

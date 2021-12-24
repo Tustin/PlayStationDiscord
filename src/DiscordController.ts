@@ -110,6 +110,7 @@ export class DiscordController
             if (this.ready()) {
                 this._client.clearActivity();
                 this._client.destroy();
+                this._currentConsole = null;
                 this._ready = false;
             }
         } catch (err) {
