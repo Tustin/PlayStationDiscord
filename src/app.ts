@@ -231,6 +231,7 @@ function spawnMainWindow() : void
         backgroundColor: '#23272a',
         webPreferences: {
             nodeIntegration: true,
+            contextIsolation: false
         },
         frame: false,
         title: 'PlayStationDiscord'
@@ -622,6 +623,25 @@ ipcMain.on('signout', async () => {
     }).catch((err) => {
         log.error(err);
     });
+});
+
+ipcMain.on('minimize-window', async () => {
+	mainWindow.minimize();
+});
+
+ipcMain.on('maximize-window', async () => {
+	if (mainWindow.isMaximized())
+	{
+		mainWindow.unmaximize();
+	}
+	else
+	{
+		mainWindow.maximize();
+	}
+});
+
+ipcMain.on('close-window', async () => {
+	mainWindow.close();
 });
 
 autoUpdater.on('download-progress', ({ percent }) => {
