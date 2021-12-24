@@ -690,7 +690,7 @@ ipcMain.on('show-notes', () => {
 });
 
 ipcMain.on('mac-download', () => {
-    shell.openExternal('https://tusticles.com/PlayStationDiscord/');
+    shell.openExternal('https://tustin.dev/PlayStationDiscord/');
 });
 
 ipcMain.on('discord-reconnect', () => {
