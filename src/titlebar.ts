@@ -1,25 +1,27 @@
-const { remote } = require('electron');
-
 document.getElementById('minimize').addEventListener('click', (e) => {
-	const currentWindow = remote.BrowserWindow.getFocusedWindow();
-	currentWindow.minimize();
+	ipcRenderer.send('minimize-window');
+	// const currentWindow = remote.BrowserWindow.getFocusedWindow();
+	// currentWindow.minimize();
 });
 
 document.getElementById('maximize').addEventListener('click', (e) => {
-	const currentWindow = remote.BrowserWindow.getFocusedWindow();
+	ipcRenderer.send('maximize-window');
 
-	if (currentWindow.isMaximized())
-	{
-		currentWindow.unmaximize();
-	}
-	else
-	{
-		currentWindow.maximize();
-	}
+	// const currentWindow = remote.BrowserWindow.getFocusedWindow();
+
+	// if (currentWindow.isMaximized())
+	// {
+	// 	currentWindow.unmaximize();
+	// }
+	// else
+	// {
+	// 	currentWindow.maximize();
+	// }
 });
 
 document.getElementById('close').addEventListener('click', (e) => {
-	const currentWindow = remote.BrowserWindow.getFocusedWindow();
+	ipcRenderer.send('close-window');
+	// const currentWindow = remote.BrowserWindow.getFocusedWindow();
 
-	currentWindow.close();
+	// currentWindow.close();
 });

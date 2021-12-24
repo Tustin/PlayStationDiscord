@@ -188,7 +188,7 @@ export class PlayStationAccount implements IAccount
         return new Promise<string>((resolve, reject) => {
             if (store.has('accountId'))
             {
-                return resolve(store.get('accountId'));
+                return resolve(store.get('accountId') as string);
             }
 
             const accessToken = this.data().access_token;

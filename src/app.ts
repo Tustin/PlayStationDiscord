@@ -94,7 +94,6 @@ function spawnLoginWindow() : void
         icon: logoIcon,
         webPreferences: {
             nodeIntegration: false,
-            enableRemoteModule: false,
             plugins: true
         }
     });
@@ -232,7 +231,6 @@ function spawnMainWindow() : void
         backgroundColor: '#23272a',
         webPreferences: {
             nodeIntegration: true,
-            enableRemoteModule: true
         },
         frame: false,
         title: 'PlayStationDiscord'
