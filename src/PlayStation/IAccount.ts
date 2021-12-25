@@ -4,11 +4,11 @@ import AbstractProfile from './AbstractProfile';
 
 export interface IAccount {
 
+    data : IOAuthTokenResponse;
+
     presences() : Promise<AbstractPresence>;
 
     refresh() : Promise<IOAuthTokenResponse>;
-
-    data() : IOAuthTokenResponse;
 
     profile() : Promise<AbstractProfile>;
 }

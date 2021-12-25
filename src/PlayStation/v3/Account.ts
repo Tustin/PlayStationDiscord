@@ -36,7 +36,7 @@ export class PlayStationAccount implements IAccount
         this._accountData = accountData;
     }
 
-    public data() : IOAuthTokenResponse
+    public get data() : IOAuthTokenResponse
     {
         return this._accountData;
     }
@@ -125,7 +125,7 @@ export class PlayStationAccount implements IAccount
     {
         return new Promise<IOAuthTokenResponse>((resolve, reject) => {
             let formData = {};
-            formData = PlayStationAccount.refreshTokenFormData(this.data());
+            formData = PlayStationAccount.refreshTokenFormData(this.data);
 
             axios.post<IOAuthTokenResponse>('https://ca.account.sony.com/api/authz/v3/oauth/token', queryString.stringify(formData), {
                 headers: {
@@ -156,7 +156,7 @@ export class PlayStationAccount implements IAccount
     public presences() : Promise<Presence>
     {
         return new Promise<Presence>((resolve, reject) => {
-            const accessToken = this.data().access_token;
+            const accessToken = this.data.access_token;
 
             axios.get<IPresenceModel>('https://m.np.playstation.net/api/userProfile/v1/internal/users/me/basicPresences?type=primary', {
                 headers: {
@@ -188,10 +188,10 @@ export class PlayStationAccount implements IAccount
         return new Promise<string>((resolve, reject) => {
             if (store.has('accountId'))
             {
-                return resolve(store.get('accountId'));
+                return resolve(store.get('accountId') as string);
             }
 
-            const accessToken = this.data().access_token;
+            const accessToken = this.data.access_token;
             axios.get('https://dms.api.playstation.com/api/v1/devices/accounts/me', {
                 headers: {
                     Authorization: `Bearer ${accessToken}`
@@ -218,7 +218,7 @@ export class PlayStationAccount implements IAccount
     public profile() : Promise<AbstractProfile>
     {
         return new Promise<AbstractProfile>((resolve, reject) => {
-            const accessToken = this.data().access_token;
+            const accessToken = this.data.access_token;
 
             this.accountId()
             .then((accountId) => {

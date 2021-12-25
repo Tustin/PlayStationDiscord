@@ -94,7 +94,6 @@ function spawnLoginWindow() : void
         icon: logoIcon,
         webPreferences: {
             nodeIntegration: false,
-            enableRemoteModule: false,
             plugins: true
         }
     });
@@ -232,7 +231,7 @@ function spawnMainWindow() : void
         backgroundColor: '#23272a',
         webPreferences: {
             nodeIntegration: true,
-            enableRemoteModule: true
+            contextIsolation: false
         },
         frame: false,
         title: 'PlayStationDiscord'
@@ -262,6 +261,20 @@ function spawnMainWindow() : void
         .then((profile) => {
             log.debug('Got PSN profile info', profile);
             mainWindow.webContents.send('profile-data', { onlineId: profile.onlineId(), avatarUrl: profile.avatarUrl() });
+
+            // Resolve current presence to login to Discord properly.
+            playstationAccount.presences().then((presence) => {
+                if (presence.onlineStatus() === 'online') {
+                    resolvePlatform(presence.platform()).then(platform => {
+                        discordController.init(platform).then(() => {
+                            appEvent.emit('start-rich-presence');
+                        });
+                    }).catch(() => {
+                        showMessageAndDie('Failed finding supported platform using the platform returned from API.');
+                    });
+                }
+            });
+
         }).catch((err) => {
             log.error('Failed fetching PSN profile', err);
         });
@@ -328,7 +341,6 @@ function spawnMainWindow() : void
 }
 
 let richPresenceRetries : number;
-let supportedTitleId : string;
 
 function updateRichPresence() : void
 {
@@ -353,46 +365,31 @@ function updateRichPresence() : void
             let discordRichPresenceOptionsData : IDiscordPresenceUpdateOptions;
 
             const platform = presence.platform();
+            const discordPlatform = discordController.currentConsole?.type.toString().toLowerCase();
             // const titleInfo = _.get(presence, ['gameTitleInfoList', 0]);
             // const previousPresenceTitleInfo = _.get(previousPresence, ['gameTitleInfoList', 0]);
 
-            if (previousPresence === undefined || platform !== previousPresence.platform())
-            {
-                log.info('Switching console to ', platform);
-
-                // Reset cached presence so we get fresh data.
-                previousPresence = undefined;
-
-                if (discordController)
+            resolvePlatform(platform).then((playstationConsole) => {
+                if (discordController.currentConsole === null || (discordController.currentConsole.type !== playstationConsole.type && (previousPresence === undefined || platform !== previousPresence.platform())))
                 {
-                    discordController.stop();
+                    log.info('Switching console to', platform);
+
+                    // Reset cached presence so we get fresh data.
+                    previousPresence = undefined;
+
+                    if (discordController)
+                    {
+                        discordController.stop();
+                    }
+
+                    discordController.switch(playstationConsole).then(() => {
+                        log.info('Switched console to', playstationConsole.consoleName);
+                    }).catch(() => {
+                        return showMessageAndDie(`An error occurred when trying to switch PlayStation console.`);
+                    });
+
                 }
-
-                // @TODO: Check this to make sure platform case matches the consoletype keys.
-                const platformType = PlayStationConsoleType[platform as (keyof typeof PlayStationConsoleType)];
-
-                if (platformType === undefined)
-                {
-                    log.error(`Unexpected platform type ${platform} was not found in PlayStationConsoleType`);
-
-                    return showMessageAndDie(`An error occurred when trying to assign/switch PlayStation console.`);
-                }
-
-                const playstationConsole = getConsoleFromType(platformType);
-
-                if (playstationConsole === undefined)
-                {
-                    log.error(`No suitable PlayStationConsole abstraction could be derived from platform type ${platformType}`);
-
-                    return showMessageAndDie(`An error occurred when trying to assign/switch PlayStation console.`);
-                }
-
-                discordController.switch(playstationConsole).then(() => {
-                    log.info('Switched console to', playstationConsole.consoleName);
-                }).catch(() => {
-                    return showMessageAndDie(`An error occurred when trying to switch PlayStation console.`);
-                });
-            }
+            });
 
             // Setup previous presence with the current presence if it's empty.
             // Update status if the titleId has changed.
@@ -417,25 +414,11 @@ function updateRichPresence() : void
                         details: presence.titleName(),
                         state: presence.titleStatus(),
                         startTimestamp: Date.now(),
-                        largeImageText: presence.titleName()
+                        largeImageText: presence.titleName(),
+                        largeImageKey: presence.icon(),
                     };
 
-                    log.info('Game has switched', presence.titleName());
-
-                    const discordFriendly = supportedGames.get(presence);
-
-                    if (discordFriendly !== undefined)
-                    {
-                        supportedTitleId = discordFriendly.titleId.toLowerCase();
-                        discordRichPresenceData.largeImageKey = supportedTitleId;
-
-                        log.info('Using game icon since it is supported');
-                    }
-                    else
-                    {
-                        log.warn('Game icon not found in supported games store', presence.titleName(), presence.titleId());
-                        supportedTitleId = undefined;
-                    }
+                    log.info('Game has switched to', presence.titleName());
                 }
             }
             // Update if game status has changed.
@@ -444,13 +427,9 @@ function updateRichPresence() : void
                 discordRichPresenceData = {
                     details: presence.titleName(),
                     state: presence.titleStatus(),
-                    largeImageText: presence.titleName()
+                    largeImageText: presence.titleName(),
+                    largeImageKey: presence.icon(),
                 };
-
-                if (supportedTitleId !== undefined)
-                {
-                    discordRichPresenceData.largeImageKey = supportedTitleId;
-                }
 
                 log.info('Game status has changed', presence.titleStatus());
             }
@@ -499,6 +478,32 @@ function getConsoleFromType(type: PlayStationConsoleType) : PlayStationConsole
         default:
             return undefined;
     }
+}
+
+function resolvePlatform(platform: string) : Promise<PlayStationConsole>
+{
+    return new Promise((resolve, reject) => {
+        // @TODO: Check this to make sure platform case matches the consoletype keys.
+        const platformType = PlayStationConsoleType[platform as (keyof typeof PlayStationConsoleType)];
+
+        if (platformType === undefined)
+        {
+            log.error(`Unexpected platform type ${platform} was not found in PlayStationConsoleType`);
+
+            return reject();
+        }
+
+        const playstationConsole = getConsoleFromType(platformType);
+
+        if (playstationConsole === undefined)
+        {
+            log.error(`No suitable PlayStationConsole abstraction could be derived from platform type ${platformType}`);
+
+            return reject();
+        }
+
+        return resolve(playstationConsole);
+    });
 }
 
 // For some reason, despite Timeout being a reference, it doesn't seem like you can undefine it by reference.
@@ -626,6 +631,25 @@ ipcMain.on('signout', async () => {
     });
 });
 
+ipcMain.on('minimize-window', async () => {
+	mainWindow.minimize();
+});
+
+ipcMain.on('maximize-window', async () => {
+	if (mainWindow.isMaximized())
+	{
+		mainWindow.unmaximize();
+	}
+	else
+	{
+		mainWindow.maximize();
+	}
+});
+
+ipcMain.on('close-window', async () => {
+	mainWindow.close();
+});
+
 autoUpdater.on('download-progress', ({ percent }) => {
     sendUpdateStatus({
         message: `Downloading update ${Math.round(percent)}%`,
@@ -692,7 +716,7 @@ ipcMain.on('show-notes', () => {
 });
 
 ipcMain.on('mac-download', () => {
-    shell.openExternal('https://tusticles.com/PlayStationDiscord/');
+    shell.openExternal('https://tustin.dev/PlayStationDiscord/');
 });
 
 ipcMain.on('discord-reconnect', () => {
@@ -710,6 +734,10 @@ appEvent.on('discord-stop', () => {
     appEvent.emit('stop-rich-presence');
 
     toggleDiscordReconnect(true);
+});
+
+appEvent.on('discord-switched', () => {
+    log.debug('discord-switched');
 });
 
 app.on('second-instance', () => {

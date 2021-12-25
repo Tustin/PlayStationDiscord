@@ -36,4 +36,10 @@ export default class Presence extends AbstractPresence implements IPresence<IPre
     public titleStatus() : string {
         return this.onlineStatus();
     }
+    public icon() : string {
+        return this.onlineStatus(); // @Temp
+    }
+    public format() : string {
+        return 'PS3'; // Hardcode this here because there is no format prop for v2 API.
+    }
 }

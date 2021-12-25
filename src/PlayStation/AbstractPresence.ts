@@ -9,4 +9,8 @@ export default abstract class AbstractPresence
     public abstract titleStatus() : string;
 
     public abstract platform() : string;
+
+    public abstract icon() : string;
+
+    public abstract format() : string;
 }

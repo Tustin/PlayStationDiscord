@@ -32,21 +32,24 @@ export class DiscordController
         smallImageText: 'PlayStationDiscord ' + (packageJson.version || '')
     };
 
-    constructor()
+    public get currentConsole() : PlayStationConsole
     {
-        this._client = new Client({ transport: 'ipc' });
-
-        this._client.once('ready', () => {
-            this._ready = true;
-            log.info('DiscordController ready');
-
-            appEvent.emit('discord-ready');
-        });
+        return this._currentConsole;
     }
 
-    private init(console: PlayStationConsole) : Promise<void>
+    public init(console: PlayStationConsole) : Promise<void>
     {
         return new Promise((resolve, reject) => {
+
+            this._client = new Client({ transport: 'ipc' });
+
+            this._client.once('ready', () => {
+                this._ready = true;
+                log.info('DiscordController ready');
+
+                appEvent.emit('discord-ready');
+            });
+
             this._client.login({ clientId: console.clientId }).then(() => {
                 log.info('Logged into Discord with clientId', console.clientId);
                 this._currentConsole = console;
@@ -69,10 +72,6 @@ export class DiscordController
     public switch(console: PlayStationConsole) : Promise<void>
     {
         return new Promise((resolve, reject) => {
-            if (!this.ready()) {
-                return reject('DiscordController not ready');
-            }
-
             this.init(console).then(() => {
                 appEvent.emit('discord-switched');
 
@@ -111,11 +110,9 @@ export class DiscordController
             if (this.ready()) {
                 this._client.clearActivity();
                 this._client.destroy();
+                this._currentConsole = null;
                 this._ready = false;
             }
-
-            appEvent.emit('discord-stop');
-
         } catch (err) {
             log.error('Failed stopping Discord RPC', err);
         }
@@ -124,29 +121,22 @@ export class DiscordController
     public update(presence: IDiscordPresenceModel, options?: IDiscordPresenceUpdateOptions) : Promise<void>
     {
         return new Promise((resolve, reject) => {
-            if (!this.ready())
-            {
-                reject('Discord controller not ready');
-            }
-            else
-            {
-                const usingOptions = options !== undefined;
+            const usingOptions = options !== undefined;
 
-                if (!usingOptions || !options.hideTimestamp)
+            if (!usingOptions || !options.hideTimestamp)
+            {
+                if (presence.startTimestamp === undefined)
                 {
-                    if (presence.startTimestamp === undefined)
-                    {
-                        presence.startTimestamp = this._lastStartTimestamp;
-                    }
-                    else
-                    {
-                        this._lastStartTimestamp = presence.startTimestamp;
-                    }
+                    presence.startTimestamp = this._lastStartTimestamp;
                 }
-
-                this._client.setActivity({...this._defaultInfo, ...presence});
-                resolve();
+                else
+                {
+                    this._lastStartTimestamp = presence.startTimestamp;
+                }
             }
+
+            this._client.setActivity({...this._defaultInfo, ...presence});
+            resolve();
         });
     }
 }

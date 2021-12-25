@@ -17,13 +17,6 @@ const packageJson = require('../package.json');
 ipcRenderer.on('profile-data', (event: any, data: any) => {
     const image : HTMLImageElement = document.getElementById('avatar') as HTMLImageElement;
     image.src = data.avatarUrl;
-    // const avatars = data.avatars;
-    // if (avatars.length > 0)
-    // {
-    // 	const avatar = getBiggestAvatar(avatars);
-
-    // 	image.src = avatar.url;
-    // }
 
     document.getElementById('onlineId').innerHTML = data.onlineId;
 });
@@ -133,28 +126,3 @@ window.onload = () => {
         togglePresence.innerHTML = 'Enable';
     }
 };
-
-function getBiggestAvatar(avatars: any) {
-    const sizes = ['xl', 'l', 'm', 's', 'xs'];
-    let biggest = avatars[0];
-    let sizeIndex = -1;
-
-    for (const avatar of avatars) {
-        if (avatar.size === 'xl') {
-            return avatar;
-        }
-
-        const i = sizes.indexOf(avatar.size.toLowerCase());
-        if (i === -1)
-        {
-            continue;
-        }
-        if (i < sizeIndex)
-        {
-            sizeIndex = i;
-            biggest = avatar;
-        }
-    }
-
-    return biggest;
-}

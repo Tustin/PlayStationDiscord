@@ -52,7 +52,7 @@ export class PlayStationAccount implements IAccount
         });
     }
 
-    public data() : IOAuthTokenResponse
+    public get data() : IOAuthTokenResponse
     {
         return this._accountData;
     }
@@ -111,7 +111,7 @@ export class PlayStationAccount implements IAccount
             // This is here because of some weird problem with queryString.stringify
             // - Tustin 5/30/2019
             let formData = {};
-            formData = PlayStationAccount.refreshTokenFormData(this.data());
+            formData = PlayStationAccount.refreshTokenFormData(this.data);
 
             axios.post<IOAuthTokenResponse>(authEndpoint, queryString.stringify(formData), {
                 headers: {
@@ -142,7 +142,7 @@ export class PlayStationAccount implements IAccount
     public profile() : Promise<AbstractProfile>
     {
         return new Promise<AbstractProfile>((resolve, reject) => {
-            const accessToken = this.data().access_token;
+            const accessToken = this.data.access_token;
 
             axios.get('https://us-prof.np.community.playstation.net/userProfile/v1/users/me/profile2?fields=onlineId,avatarUrls,plus,primaryOnlineStatus,presences(@titleInfo)&avatarSizes=m,xl&titleIconSize=s', {
                 headers: {

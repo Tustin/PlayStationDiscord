@@ -1,4 +1,6 @@
 import _ = require('lodash');
+import log = require('electron-log');
+
 import AbstractPresence from '../AbstractPresence';
 import IPresence from '../IPresence';
 import { IBasicPresence, IGameTitleInfoList } from './Model/PresenceModel';
@@ -11,6 +13,7 @@ export default class Presence extends AbstractPresence implements IPresence<IBas
     {
         super();
         this.presenceData = presenceData;
+        log.debug(presenceData);
     }
 
     public onlineStatus() : string {
@@ -31,6 +34,21 @@ export default class Presence extends AbstractPresence implements IPresence<IBas
 
     public titleStatus() : string {
         return _.get(this.title(), ['gameStatus']);
+    }
+
+    public format() : string {
+        return _.get(this.title(), ['format']);
+    }
+
+    public icon() : string {
+        // Hack. Of course Sony uses 2 different property names for PS4/PS5 lol.
+        let key = 'npTitleIconUrl';
+
+        if (this.format() === 'PS5') {
+            key = 'conceptIconUrl';
+        }
+
+        return _.get(this.title(), [key]);
     }
 
     public platform() : string {
