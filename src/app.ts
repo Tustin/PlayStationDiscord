@@ -25,8 +25,6 @@ import { IOAuthTokenResponse } from './Model/IOAuthTokenResponse';
 
 const isDev = process.env.NODE_ENV === 'dev';
 
-const supportedGames = require('./SupportedGames');
-
 const store = new _store();
 
 const logoIcon = nativeImage.createFromPath(path.join(__dirname, '../assets/images/logo.png'));
