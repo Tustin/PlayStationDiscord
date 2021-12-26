@@ -1,6 +1,5 @@
-let discordClient : any;
-
-import { dialog, ipcMain } from 'electron';
+import { Client } from 'discord-rpc';
+import { dialog } from 'electron';
 import log = require('electron-log');
 import { IDiscordPresenceModel, IDiscordPresenceUpdateOptions } from './Model/DiscordPresenceModel';
 import { PlayStationConsole } from './Consoles/PlayStationConsole';
@@ -10,101 +9,134 @@ const packageJson = require('../package.json');
 
 interface IDiscordPresenceDefaultDataModel
 {
-  	instance : boolean;
-	largeImageKey : string;
-	largeImageText : string;
-  	smallImageKey : string;
-  	smallImageText : string;
+    instance : boolean;
+    largeImageKey : string;
+    largeImageText : string;
+    smallImageKey : string;
+    smallImageText : string;
 }
 
 export class DiscordController
 {
-	private _currentConsole : PlayStationConsole;
-	private _running : boolean = false;
-	private _lastStartTimestamp : number;
+    private _client : Client;
+    private _currentConsole : PlayStationConsole;
+    private _ready : boolean = false;
+    private _lastStartTimestamp : number;
 
-	// Most of these properties get replaced in the constructor for the respective console.
-	private _defaultInfo : IDiscordPresenceDefaultDataModel =  {
-		instance: true,
-		largeImageKey: 'ps4_main',
-		largeImageText: 'PlayStation 4',
-		smallImageKey: 'ps4_main',
-		smallImageText: 'PlayStationDiscord ' + (packageJson.version || '')
-	};
+    // Most of these properties get replaced in the constructor for the respective console.
+    private _defaultInfo : IDiscordPresenceDefaultDataModel =  {
+        instance: true,
+        largeImageKey: 'ps4_main',
+        largeImageText: 'PlayStation 4',
+        smallImageKey: 'ps4_main',
+        smallImageText: 'PlayStationDiscord ' + (packageJson.version || '')
+    };
 
-	constructor(console: PlayStationConsole)
-	{
-		this._currentConsole = console;
+    public get currentConsole() : PlayStationConsole
+    {
+        return this._currentConsole;
+    }
 
-		discordClient = require('discord-rich-presence')(console.clientId);
+    public init(console: PlayStationConsole) : Promise<void>
+    {
+        return new Promise((resolve, reject) => {
 
-		this._defaultInfo.largeImageKey = console.assetName;
-		this._defaultInfo.largeImageText = console.consoleName;
-		this._defaultInfo.smallImageKey = console.assetName;
+            this._client = new Client({ transport: 'ipc' });
 
-		this._running = true;
+            this._client.once('ready', () => {
+                this._ready = true;
+                log.info('DiscordController ready');
 
-		discordClient.on('error', (err: any) => {
-			log.error('An error occurred while communicating with Discord', err);
+                appEvent.emit('discord-ready');
+            });
 
-			dialog.showMessageBox(null, {
-				type: 'error',
-				title: 'PlayStationDiscord Error',
-				message: 'An error occurred while communicating with Discord',
-				detail: 'Please check the log file for additonal information.'
-			});
+            this._client.login({ clientId: console.clientId }).then(() => {
+                log.info('Logged into Discord with clientId', console.clientId);
+                this._currentConsole = console;
 
-			appEvent.emit('discord-disconnected', err);
+                // Set assets.
+                this._defaultInfo.largeImageKey = console.assetName;
+                this._defaultInfo.largeImageText = console.consoleName;
+                this._defaultInfo.smallImageKey = console.assetName;
 
-			this._running = false;
-		});
+                appEvent.emit('discord-init');
 
-		log.info('DiscordController init');
-	}
+                resolve();
+            })
+            .catch((err) => {
+                this.error(err);
+            });
+        });
+    }
 
-	public restart() : void
-	{
-		this.stop();
-		discordClient = new DiscordController(this._currentConsole);
-	}
+    public switch(console: PlayStationConsole) : Promise<void>
+    {
+        return new Promise((resolve, reject) => {
+            this.init(console).then(() => {
+                appEvent.emit('discord-switched');
 
-	public running() : boolean
-	{
-		return this._running;
-	}
+                return resolve();
+            }).catch((err) => {
+                log.error('Failed switching to console', console, err);
+                reject(err);
+            });
+        });
+    }
 
-	public stop() : void
-	{
-		discordClient.disconnect();
-		this._running = false;
-	}
+    public ready() : boolean
+    {
+        return this._ready;
+    }
 
-	public update(data: IDiscordPresenceModel, options?: IDiscordPresenceUpdateOptions) : Promise<void>
-	{
-		return new Promise((resolve, reject) => {
-			if (!this.running())
-			{
-				reject('Discord controller not running');
-			}
-			else
-			{
-				const usingOptions = options !== undefined;
+    private error(err: any) : void
+    {
+        log.error('An error occurred while communicating with Discord', err);
 
-				if (!usingOptions || !options.hideTimestamp)
-				{
-					if (data.startTimestamp === undefined)
-					{
-						data.startTimestamp = this._lastStartTimestamp;
-					}
-					else
-					{
-						this._lastStartTimestamp = data.startTimestamp;
-					}
-				}
+        dialog.showMessageBox(null, {
+            type: 'error',
+            title: 'PlayStationDiscord Error',
+            message: 'An error occurred while communicating with Discord',
+            detail: 'Please check the log file for additonal information.'
+        });
 
-				discordClient.updatePresence({...this._defaultInfo, ...data});
-				resolve();
-			}
-		});
-	}
+        appEvent.emit('discord-error', err);
+
+        this.stop();
+    }
+
+    public async stop() : Promise<void>
+    {
+        try {
+            if (this.ready()) {
+                this._client.clearActivity();
+                this._client.destroy();
+                this._currentConsole = null;
+                this._ready = false;
+            }
+        } catch (err) {
+            log.error('Failed stopping Discord RPC', err);
+        }
+    }
+
+    public update(presence: IDiscordPresenceModel, options?: IDiscordPresenceUpdateOptions) : Promise<void>
+    {
+        return new Promise((resolve, reject) => {
+            const usingOptions = options !== undefined;
+
+            if (!usingOptions || !options.hideTimestamp)
+            {
+                if (presence.startTimestamp === undefined)
+                {
+                    presence.startTimestamp = this._lastStartTimestamp;
+                }
+                else
+                {
+                    this._lastStartTimestamp = presence.startTimestamp;
+                }
+            }
+
+            this._client.setActivity({...this._defaultInfo, ...presence});
+            resolve();
+        });
+    }
 }
