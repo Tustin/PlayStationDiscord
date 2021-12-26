@@ -19,10 +19,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v1
-      - name: Setup Node 12.x
+      - name: Setup Node 14.17.3
         uses: actions/setup-node@v1
         with:
-          node-version: 12.x
+          node-version: 14.17.3
       - name: Install Snapcraft
         uses: samuelmeuli/action-snapcraft@v1
         # Only install Snapcraft on Ubuntu
