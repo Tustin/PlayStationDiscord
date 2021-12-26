@@ -6,6 +6,7 @@ const _store = require('electron-store');
 const store = new _store();
 
 const togglePresence = document.getElementById('togglePresence');
+const toggleAutoStart = document.getElementById('toggleAutoStart');
 const signOut = document.getElementById('signOut');
 const updateInfo = document.getElementById('update-info');
 const updateIcon = updateInfo.querySelector('#icon') as HTMLImageElement;
@@ -95,6 +96,24 @@ document.addEventListener('click', (event) => {
     }
 });
 
+toggleAutoStart.addEventListener('click', () => {
+    if (toggleAutoStart.classList.contains('red'))
+    {
+        toggleAutoStart.classList.remove('red');
+        toggleAutoStart.classList.add('blurple');
+        toggleAutoStart.innerHTML = 'AutoStart Enable';
+    }
+    else
+    {
+        toggleAutoStart.classList.remove('blurple');
+        toggleAutoStart.classList.add('red');
+        toggleAutoStart.innerHTML = 'AutoStart Disable';
+    }
+
+    ipcRenderer.send('toggle-autostart');
+});
+
+
 togglePresence.addEventListener('click', () => {
     if (togglePresence.classList.contains('red'))
     {
@@ -124,5 +143,11 @@ window.onload = () => {
     {
         togglePresence.classList.remove('red');
         togglePresence.innerHTML = 'Enable';
+    }
+
+    if (!store.get('autostartEnabled', true))
+    {
+        toggleAutoStart.classList.remove('red');
+        toggleAutoStart.innerHTML = 'AutoStart Enable';
     }
 };

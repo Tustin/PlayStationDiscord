@@ -1,9 +1,9 @@
-import { app, BrowserWindow, dialog, ipcMain, nativeImage, shell, Tray, Menu, Notification, MenuItemConstructorOptions, MenuItem, session } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, nativeImage, shell, Tray, Menu, Notification, session } from 'electron';
 import { DiscordController } from './DiscordController';
 import {PlayStationConsole, PlayStationConsoleType } from './Consoles/PlayStationConsole';
 import { IDiscordPresenceModel, IDiscordPresenceUpdateOptions } from './Model/DiscordPresenceModel';
 import { autoUpdater } from 'electron-updater';
-import axios from 'axios';
+
 import PlayStation5 from './Consoles/PlayStation5';
 import PlayStation4 from './Consoles/PlayStation4';
 import PlayStation3 from './Consoles/PlayStation3';
@@ -22,6 +22,14 @@ import * as _ from 'lodash';
 import { IAccount } from './PlayStation/IAccount';
 import AbstractPresence from './PlayStation/AbstractPresence';
 import { IOAuthTokenResponse } from './Model/IOAuthTokenResponse';
+
+const autoLaunch = require('auto-launch');
+
+const AUTOLAUNCH = new autoLaunch({
+    name: 'PlayStationDiscord',
+    path: app.getPath('exe'),
+    isHidden: true
+});
 
 const isDev = process.env.NODE_ENV === 'dev';
 
@@ -206,6 +214,10 @@ function spawnMainWindow() : void
             click:  () => ipcMain.emit('toggle-presence')
         },
         {
+            label: 'Toggle AutoStart',
+            click: () => ipcMain.emit('toggle-autostart')
+        },
+        {
             label: 'Quit',
             click:  () => {
                 mainWindow.destroy();
@@ -279,8 +291,10 @@ function spawnMainWindow() : void
     });
 
     mainWindow.on('ready-to-show', () => {
-        mainWindow.show();
-        mainWindow.focus();
+        if (!app.commandLine.hasSwitch('hidden')) {
+            mainWindow.show();
+            mainWindow.focus();
+        }
     });
 
     mainWindow.on('closed', () => {
@@ -596,6 +610,19 @@ appEvent.on('stop-rich-presence', () => {
     log.info('Stopped rich presence loop');
 });
 
+ipcMain.on('toggle-autostart', () => {
+    const newValue = !store.get('autostartEnabled');
+    store.set('autostartEnabled', newValue);
+    if (!newValue)
+    {
+        AUTOLAUNCH.disable();
+    }
+    else
+    {
+        AUTOLAUNCH.enable();
+    }
+});
+
 ipcMain.on('toggle-presence', () => {
     const newValue = !store.get('presenceEnabled');
     store.set('presenceEnabled', newValue);
@@ -753,6 +780,15 @@ app.on('second-instance', () => {
 });
 
 app.on('ready', () => {
+    // auto start app on startup
+    AUTOLAUNCH.isEnabled().then((isEnabled: boolean) => {
+        if (!isEnabled) {
+            AUTOLAUNCH.enable();
+        }
+    }).catch((err: string) => {
+        throw err;
+    });
+
     // Fix for #26
     if (process.platform === 'darwin')
     {
