@@ -1,3 +1,5 @@
+# This project is now abandonware due to Discord adding official PlayStation support. Thank you to everyone who has used my software over the last few years. It was fun :v:
+
 # PlayStationDiscord
 
 [![Actions Status](https://github.com/Tustin/PlayStationDiscord/workflows/PlayStationDiscord%20Deploy/badge.svg)](https://github.com/Tustin/PlayStationDiscord/actions)
